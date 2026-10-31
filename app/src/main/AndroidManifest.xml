@@ -5,8 +5,10 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <application
         android:name=".App"
@@ -23,26 +25,20 @@
         android:usesCleartextTraffic="true">
 
         <activity
-            android:name=".ui.activities.SplashActivity"
+            android:name=".ui.MainActivity"
             android:exported="true"
             android:screenOrientation="portrait"
-            android:theme="@style/Splash">
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".ui.activities.MainActivity"
-            android:exported="true"
-            android:screenOrientation="portrait" />
 
         <receiver
-            android:name=".services.PrayerAlarmService"
+            android:name=".service.PrayerAlarmReceiver"
             android:enabled="true"
-            android:exported="true" />
-
+            android:exported="false" />
 
     </application>
 

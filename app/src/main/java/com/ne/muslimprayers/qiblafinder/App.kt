@@ -1,14 +1,13 @@
 package com.ne.muslimprayers.qiblafinder
 
-import androidx.multidex.MultiDex
-import androidx.multidex.MultiDexApplication
+import android.app.Application
+import com.ne.muslimprayers.qiblafinder.core.theme.ArabicFontManager
 import dagger.hilt.android.HiltAndroidApp
 
-
 @HiltAndroidApp
-class App : MultiDexApplication() {
+class App : Application() {
     override fun onCreate() {
         super.onCreate()
-        MultiDex.install(this)
+        ArabicFontManager.init(this)
     }
 }

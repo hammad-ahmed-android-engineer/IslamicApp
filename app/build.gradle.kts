@@ -1,23 +1,27 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    kotlin("kapt")
+    id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.devtools.ksp")
     id("kotlin-parcelize")
     id("com.google.dagger.hilt.android")
 }
 
 android {
     namespace = "com.ne.muslimprayers.qiblafinder"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.ne.muslimprayers.qiblafinder"
-        minSdk = 21
-        targetSdk = 34
-        versionCode = 2
-        versionName = "1.2"
-        multiDexEnabled = true
+        minSdk = 24
+        targetSdk = 35
+        versionCode = 3
+        versionName = "2.0.0"
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables {
+            useSupportLibrary = true
+        }
     }
 
     buildTypes {
@@ -38,88 +42,92 @@ android {
             )
         }
     }
+
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
+
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = "21"
+        freeCompilerArgs += listOf(
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            "-opt-in=com.google.accompanist.permissions.ExperimentalPermissionsApi"
+        )
     }
 
     buildFeatures {
-        dataBinding = true
-        viewBinding = true
+        compose = true
+    }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
     }
 }
 
 dependencies {
+    // SDP & SSP Scalable Units
+    implementation(libs.sdp.android)
+    implementation(libs.ssp.android)
 
-//    implementation("androidx.core:core-ktx:1.9.0")
-//    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.material:material:1.10.0")
-//    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-//    testImplementation("junit:junit:4.13.2")
-//    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-//    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    // AndroidX Core & Lifecycle
+    implementation(libs.core.ktx)
+    implementation(libs.appcompat)
+    implementation(libs.material)
+    implementation(libs.lifecycle.runtime.ktx)
+    implementation(libs.lifecycle.runtime.compose)
+    implementation(libs.lifecycle.viewmodel.compose)
+    implementation(libs.activity.compose)
 
-    implementation("com.google.dagger:hilt-android:2.47")
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-    kapt("com.google.dagger:hilt-android-compiler:2.44")
+    // Jetpack Compose BOM & UI
+    val composeBom = platform("androidx.compose:compose-bom:2024.10.00")
+    implementation(composeBom)
 
-    val multidex_version = "2.0.1"
-    implementation("androidx.multidex:multidex:$multidex_version")
+    implementation(libs.ui)
+    implementation(libs.ui.graphics)
+    implementation(libs.ui.tooling.preview)
+    implementation(libs.material3)
+    implementation(libs.material.icons.extended)
+    debugImplementation(libs.ui.tooling)
+    debugImplementation(libs.ui.test.manifest)
 
-    // Kotlin
-    val nav_version = "2.7.4"
-    implementation("androidx.navigation:navigation-fragment-ktx:$nav_version")
-    implementation("androidx.navigation:navigation-ui-ktx:$nav_version")
+    // Navigation & Hilt Integration in Compose
+    implementation(libs.navigation.compose)
+    implementation(libs.hilt.navigation.compose)
 
-    implementation("com.intuit.sdp:sdp-android:1.1.0")
-    implementation("com.intuit.ssp:ssp-android:1.1.0")
+    // Dependency Injection - Dagger Hilt
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
 
+    // Local Database - Room
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
 
-    val lifecycle_version = "2.6.2"
-    implementation("androidx.lifecycle:lifecycle-extensions:2.2.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:$lifecycle_version")
-    //noinspection LifecycleAnnotationProcessorWithJava8
-    annotationProcessor("androidx.lifecycle:lifecycle-compiler:$lifecycle_version")
+    // Networking - Retrofit & OkHttp
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.okhttp)
+    implementation(libs.logging.interceptor)
 
-    // ktx artifact
-    implementation("androidx.activity:activity-ktx:1.6.0")
-    implementation("androidx.fragment:fragment-ktx:1.5.3")
+    // Kotlin Coroutines
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.play.services)
 
-    // coroutine
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.6.4")
+    // Google Play Services & Location
+    implementation(libs.play.services.location)
 
-    // work manager
-    implementation("androidx.work:work-runtime-ktx:2.7.1")
+    // Accompanist Permissions for Compose
+    implementation(libs.accompanist.permissions)
 
-    // easy adapter
-    implementation("com.github.derysudrajat:EasyAdapter:2.0.0")
-    implementation("com.google.android.gms:play-services-location:21.0.1")
+    // Coil Image Loading for Compose
+    implementation(libs.coil.compose)
 
-
-    // firebase
-    implementation("com.google.firebase:firebase-analytics-ktx:21.1.1")
-    implementation("com.google.firebase:firebase-firestore:24.3.1")
-
-    // Room
-    implementation("androidx.room:room-runtime:2.4.3")
-    implementation("androidx.room:room-ktx:2.4.3")
-    kapt("androidx.room:room-compiler:2.4.3")
-
-    // retrofit
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.6")
-
-    implementation("com.karumi:dexter:6.2.3")
-    implementation("com.github.ybq:Android-SpinKit:1.4.0")
-}
-
-kapt {
-    correctErrorTypes = true
+    // Testing
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.ext.junit)
+    androidTestImplementation(libs.espresso.core)
 }

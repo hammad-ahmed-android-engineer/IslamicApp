@@ -1,0 +1,24 @@
+package com.ne.muslimprayers.qiblafinder.data.remote.api
+
+import com.ne.muslimprayers.qiblafinder.data.remote.dto.PrayerScheduleResponse
+import com.ne.muslimprayers.qiblafinder.data.remote.dto.QiblaApiResponse
+import retrofit2.http.GET
+import retrofit2.http.Path
+import retrofit2.http.Query
+
+interface PrayerApiService {
+    @GET("calendar")
+    suspend fun getCalendar(
+        @Query("latitude") latitude: Double,
+        @Query("longitude") longitude: Double,
+        @Query("month") month: Int,
+        @Query("year") year: Int,
+        @Query("method") method: Int = 2
+    ): PrayerScheduleResponse
+
+    @GET("qibla/{latitude}/{longitude}")
+    suspend fun getQibla(
+        @Path("latitude") latitude: Double,
+        @Path("longitude") longitude: Double
+    ): QiblaApiResponse
+}
