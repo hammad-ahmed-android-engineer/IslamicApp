@@ -96,25 +96,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
-            val location = locationHelper.getCurrentLocation()
-            if (location == null) {
-                val permissionGranted = locationHelper.hasLocationPermission()
-                val gpsEnabled = locationHelper.isLocationEnabled()
-                val msg = when {
-                    !permissionGranted -> "Location permission is required to detect your city and calculate prayer times."
-                    !gpsEnabled -> "GPS is turned off. Please turn on device location to calculate prayer times."
-                    else -> "Unable to determine your current location. Please check location settings and tap retry."
-                }
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = msg,
-                        locationName = "Location unavailable"
-                    )
-                }
-                return@launch
-            }
-
+            val location = locationHelper.getCurrentLocation() ?: locationHelper.getEffectiveLocation()
             val latitude = location.latitude
             val longitude = location.longitude
             val locationName = locationHelper.getCityAndCountry(latitude, longitude)

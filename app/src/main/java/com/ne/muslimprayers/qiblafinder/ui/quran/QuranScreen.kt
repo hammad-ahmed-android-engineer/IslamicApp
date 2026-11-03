@@ -184,7 +184,7 @@ fun QuranScreen(
             onBookmarkAyah = { ayah ->
                 viewModel.toggleBookmarkAyah(state.selectedSurah!!, ayah)
             },
-            onRetry = { viewModel.selectSurah(state.selectedSurah!!) },
+            onRetry = viewModel::retryLoadVerses,
             onOpenTafseer = { ayah -> selectedTafseerAyah = ayah },
             onCopyAyah = { ayah ->
                 val isIndoPakEffective = state.useIndoPakScript || state.selectedQuranFont == "indopak" || state.selectedQuranFont == "pdms"

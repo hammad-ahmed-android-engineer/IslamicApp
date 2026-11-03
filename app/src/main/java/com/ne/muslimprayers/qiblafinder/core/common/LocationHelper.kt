@@ -1,14 +1,11 @@
 package com.ne.muslimprayers.qiblafinder.core.common
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.pm.PackageManager
 import android.location.Geocoder
 import android.location.Location
 import android.location.LocationManager
 import android.os.Build
-import androidx.core.content.ContextCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
@@ -28,57 +25,113 @@ class LocationHelper @Inject constructor(
     @ApplicationContext private val context: Context,
     private val fusedLocationProviderClient: FusedLocationProviderClient
 ) {
+    private val prefs by lazy {
+        context.getSharedPreferences("location_cache", Context.MODE_PRIVATE)
+    }
+
     fun hasLocationPermission(): Boolean = LocationUtils.hasLocationPermission(context)
 
     fun isLocationEnabled(): Boolean = LocationUtils.isLocationEnabled(context)
 
     @SuppressLint("MissingPermission")
     suspend fun getCurrentLocation(): Location? {
-        if (!hasLocationPermission()) return null
+        if (!hasLocationPermission()) {
+            return getLastSavedLocation()
+        }
 
         return withContext(Dispatchers.IO) {
             try {
                 // 1. Check recent last known location from FusedLocationProvider
                 val lastLocation = fusedLocationProviderClient.lastLocation.await()
                 if (lastLocation != null && isLocationRecent(lastLocation)) {
+                    saveCoordinates(lastLocation.latitude, lastLocation.longitude)
                     return@withContext lastLocation
                 }
 
                 // 2. Request fresh high-accuracy location with timeout
                 val cts = CancellationTokenSource()
-                val freshLocation = withTimeoutOrNull(6000L) {
+                val freshLocation = withTimeoutOrNull(4000L) {
                     fusedLocationProviderClient.getCurrentLocation(
                         Priority.PRIORITY_HIGH_ACCURACY,
                         cts.token
                     ).await()
                 }
                 if (freshLocation != null) {
+                    saveCoordinates(freshLocation.latitude, freshLocation.longitude)
                     return@withContext freshLocation
                 }
 
                 // 3. Fallback to older lastLocation if available
                 if (lastLocation != null) {
+                    saveCoordinates(lastLocation.latitude, lastLocation.longitude)
                     return@withContext lastLocation
                 }
 
-                // 4. Fallback to native LocationManager providers
+                // 4. Fallback to native LocationManager providers (GPS, Network, Passive)
                 val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
                 if (locationManager != null) {
                     val gpsLoc = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                    if (gpsLoc != null) return@withContext gpsLoc
+                    if (gpsLoc != null) {
+                        saveCoordinates(gpsLoc.latitude, gpsLoc.longitude)
+                        return@withContext gpsLoc
+                    }
 
                     val networkLoc = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-                    if (networkLoc != null) return@withContext networkLoc
+                    if (networkLoc != null) {
+                        saveCoordinates(networkLoc.latitude, networkLoc.longitude)
+                        return@withContext networkLoc
+                    }
 
                     val passiveLoc = locationManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER)
-                    if (passiveLoc != null) return@withContext passiveLoc
+                    if (passiveLoc != null) {
+                        saveCoordinates(passiveLoc.latitude, passiveLoc.longitude)
+                        return@withContext passiveLoc
+                    }
                 }
 
-                null
+                // 5. Fallback to previously saved persistent coordinates for offline continuity
+                getLastSavedLocation()
             } catch (e: Exception) {
-                null
+                getLastSavedLocation()
             }
         }
+    }
+
+    /**
+     * Guarantees a valid Location is returned for prayer times calculation.
+     * Falls back to saved location, or Makkah default if brand new install offline.
+     */
+    suspend fun getEffectiveLocation(): Location {
+        return getCurrentLocation()
+            ?: getLastSavedLocation()
+            ?: Location("makkah_default").apply {
+                latitude = 21.4225
+                longitude = 39.8262
+            }
+    }
+
+    private fun saveCoordinates(lat: Double, lng: Double) {
+        if (ValidationUtils.isValidCoordinates(lat, lng)) {
+            prefs.edit().apply {
+                putFloat("last_lat", lat.toFloat())
+                putFloat("last_lng", lng.toFloat())
+                apply()
+            }
+        }
+    }
+
+    fun getLastSavedLocation(): Location? {
+        if (prefs.contains("last_lat") && prefs.contains("last_lng")) {
+            val lat = prefs.getFloat("last_lat", 0f).toDouble()
+            val lng = prefs.getFloat("last_lng", 0f).toDouble()
+            if (ValidationUtils.isValidCoordinates(lat, lng)) {
+                return Location("cached_offline").apply {
+                    latitude = lat
+                    longitude = lng
+                }
+            }
+        }
+        return null
     }
 
     private fun isLocationRecent(location: Location): Boolean {
@@ -89,7 +142,7 @@ class LocationHelper @Inject constructor(
 
     suspend fun getCityAndCountry(latitude: Double, longitude: Double): String {
         if (!ValidationUtils.isValidCoordinates(latitude, longitude)) {
-            return "Unknown Location"
+            return prefs.getString("last_city", "Unknown Location") ?: "Unknown Location"
         }
         return withContext(Dispatchers.IO) {
             try {
@@ -101,12 +154,17 @@ class LocationHelper @Inject constructor(
                             val addr = addresses[0]
                             val city = addr.locality ?: addr.subAdminArea ?: addr.adminArea
                             val country = addr.countryName
-                            if (!city.isNullOrBlank() && !country.isNullOrBlank()) {
-                                return@withContext "$city, $country"
+                            val result = if (!city.isNullOrBlank() && !country.isNullOrBlank()) {
+                                "$city, $country"
                             } else if (!city.isNullOrBlank()) {
-                                return@withContext city
+                                city
                             } else if (!country.isNullOrBlank()) {
-                                return@withContext country
+                                country
+                            } else null
+
+                            if (result != null) {
+                                prefs.edit().putString("last_city", result).apply()
+                                return@withContext result
                             }
                         }
                     } else {
@@ -116,14 +174,25 @@ class LocationHelper @Inject constructor(
                             val addr = addresses[0]
                             val city = addr.locality ?: addr.subAdminArea ?: addr.adminArea
                             val country = addr.countryName
-                            if (!city.isNullOrBlank() && !country.isNullOrBlank()) {
-                                return@withContext "$city, $country"
+                            val result = if (!city.isNullOrBlank() && !country.isNullOrBlank()) {
+                                "$city, $country"
+                            } else null
+
+                            if (result != null) {
+                                prefs.edit().putString("last_city", result).apply()
+                                return@withContext result
                             }
                         }
                     }
                 }
             } catch (e: Exception) {
-                // Geocoder service may be unavailable on some devices
+                // Geocoder service offline or unavailable
+            }
+
+            // Fallback to cached city name if coordinates match roughly
+            val savedCity = prefs.getString("last_city", null)
+            if (!savedCity.isNullOrBlank()) {
+                return@withContext savedCity
             }
 
             return@withContext "%.2f°, %.2f°".format(Locale.US, latitude, longitude)

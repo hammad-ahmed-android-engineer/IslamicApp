@@ -2,7 +2,9 @@ package com.ne.muslimprayers.qiblafinder.di
 
 import android.content.Context
 import androidx.room.Room
+import com.ne.muslimprayers.qiblafinder.data.local.HadithDatabaseHelper
 import com.ne.muslimprayers.qiblafinder.data.local.IslamicAppDatabase
+import com.ne.muslimprayers.qiblafinder.data.local.QuranDatabaseHelper
 import com.ne.muslimprayers.qiblafinder.data.local.dao.PrayerAlarmDao
 import com.ne.muslimprayers.qiblafinder.data.local.dao.SalahRecordDao
 import dagger.Module
@@ -16,9 +18,13 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
+    /**
+     * User data database: contains user alarms and salah tracker records.
+     * Physically separated from scripture content to prevent any data loss on updates.
+     */
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): IslamicAppDatabase {
+    fun provideUserDatabase(@ApplicationContext context: Context): IslamicAppDatabase {
         return Room.databaseBuilder(
             context,
             IslamicAppDatabase::class.java,
@@ -36,5 +42,23 @@ object DatabaseModule {
     @Singleton
     fun provideSalahRecordDao(database: IslamicAppDatabase): SalahRecordDao {
         return database.salahRecordDao
+    }
+
+    /**
+     * Dedicated Offline Quran Content Database Manager (read-only SQLite).
+     */
+    @Provides
+    @Singleton
+    fun provideQuranDatabaseHelper(@ApplicationContext context: Context): QuranDatabaseHelper {
+        return QuranDatabaseHelper(context)
+    }
+
+    /**
+     * Dedicated Offline Hadith Content Database Manager (read-only SQLite).
+     */
+    @Provides
+    @Singleton
+    fun provideHadithDatabaseHelper(@ApplicationContext context: Context): HadithDatabaseHelper {
+        return HadithDatabaseHelper(context)
     }
 }

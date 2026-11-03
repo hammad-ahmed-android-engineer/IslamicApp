@@ -13,6 +13,7 @@ import com.ne.muslimprayers.qiblafinder.domain.usecase.TogglePrayerAlarmUseCase
 import com.ne.muslimprayers.qiblafinder.domain.usecase.dua.GetDuasUseCase
 import com.ne.muslimprayers.qiblafinder.domain.usecase.hadith.GetHadithCollectionUseCase
 import com.ne.muslimprayers.qiblafinder.domain.usecase.qibla.GetQiblaDirectionUseCase
+import com.ne.muslimprayers.qiblafinder.domain.usecase.quran.GetJuzVersesUseCase
 import com.ne.muslimprayers.qiblafinder.domain.usecase.quran.GetQuranSurahsUseCase
 import com.ne.muslimprayers.qiblafinder.domain.usecase.quran.GetSurahVersesUseCase
 import com.ne.muslimprayers.qiblafinder.domain.usecase.zakat.CalculateZakatUseCase
@@ -64,6 +65,12 @@ object UseCaseModule {
     fun provideGetSurahVersesUseCase(
         repository: QuranRepository
     ): GetSurahVersesUseCase = GetSurahVersesUseCase(repository)
+
+    @Provides
+    @Singleton
+    fun provideGetJuzVersesUseCase(
+        repository: QuranRepository
+    ): GetJuzVersesUseCase = GetJuzVersesUseCase(repository)
 
     @Provides
     @Singleton

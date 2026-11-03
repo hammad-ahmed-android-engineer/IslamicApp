@@ -8,6 +8,7 @@ import com.ne.muslimprayers.qiblafinder.core.common.Resource
 import com.ne.muslimprayers.qiblafinder.core.utils.StringUtils
 import com.ne.muslimprayers.qiblafinder.domain.model.Ayah
 import com.ne.muslimprayers.qiblafinder.domain.model.Surah
+import com.ne.muslimprayers.qiblafinder.domain.usecase.quran.GetJuzVersesUseCase
 import com.ne.muslimprayers.qiblafinder.domain.usecase.quran.GetQuranSurahsUseCase
 import com.ne.muslimprayers.qiblafinder.domain.usecase.quran.GetSurahVersesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,6 +21,7 @@ import kotlinx.coroutines.launch
 import android.widget.Toast
 import com.ne.muslimprayers.qiblafinder.ui.quran.util.QuranAudioDownloadManager
 import com.ne.muslimprayers.qiblafinder.ui.quran.util.QuranDownloadStatus
+import com.ne.muslimprayers.qiblafinder.ui.quran.util.QuranStaticData
 import com.ne.muslimprayers.qiblafinder.ui.quran.util.QuranSurahUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -52,14 +54,15 @@ val DEFAULT_FAVORITE_SURAHS = listOf(
 )
 
 data class QuranUiState(
-    val surahs: List<Surah> = emptyList(),
+    val surahs: List<Surah> = QuranStaticData.ALL_SURAHS,
     val searchQuery: String = "",
-    val filteredSurahs: List<Surah> = emptyList(),
+    val filteredSurahs: List<Surah> = QuranStaticData.ALL_SURAHS,
     val selectedSectionTab: Int = 0, // 0 = Surahs, 1 = Juz, 2 = Favorites, 3 = Bookmarks
     val juzList: List<JuzInfo> = emptyList(),
     val favoriteSurahNumbers: Set<Int> = DEFAULT_FAVORITE_SURAHS.toSet(),
     val bookmarks: List<BookmarkItem> = emptyList(),
     val selectedSurah: Surah? = null,
+    val selectedJuz: JuzInfo? = null,
     val verses: List<Ayah> = emptyList(),
     val isLoadingSurahs: Boolean = false,
     val surahsError: String? = null,
@@ -86,6 +89,7 @@ data class QuranUiState(
 class QuranViewModel @Inject constructor(
     private val getQuranSurahsUseCase: GetQuranSurahsUseCase,
     private val getSurahVersesUseCase: GetSurahVersesUseCase,
+    private val getJuzVersesUseCase: GetJuzVersesUseCase,
     val quranApiService: com.ne.muslimprayers.qiblafinder.data.remote.api.QuranApiService,
     private val okHttpClient: OkHttpClient,
     @ApplicationContext private val context: Context
@@ -95,6 +99,8 @@ class QuranViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(
         QuranUiState(
+            surahs = QuranStaticData.ALL_SURAHS,
+            filteredSurahs = QuranStaticData.ALL_SURAHS,
             juzList = createJuzList(),
             favoriteSurahNumbers = loadFavorites(),
             bookmarks = loadBookmarks(),
@@ -130,8 +136,8 @@ class QuranViewModel @Inject constructor(
     }
 
     private fun loadFavorites(): Set<Int> {
-        val saved = prefs.getStringSet("favorite_surahs", null)
-        return saved?.mapNotNull { it.toIntOrNull() }?.toSet() ?: DEFAULT_FAVORITE_SURAHS.toSet()
+        val saved = prefs.getStringSet("favorite_surahs", null)?.mapNotNull { it.toIntOrNull() }?.toSet()
+        return if (saved.isNullOrEmpty()) DEFAULT_FAVORITE_SURAHS.toSet() else saved
     }
 
     private fun saveFavorites(favs: Set<Int>) {
@@ -268,10 +274,11 @@ class QuranViewModel @Inject constructor(
             getQuranSurahsUseCase().collect { result ->
                 when (result) {
                     is Resource.Loading -> {
-                        _uiState.update { it.copy(isLoadingSurahs = true, surahsError = null) }
+                        // Do not clear existing 114 surahs during loading
+                        _uiState.update { it.copy(isLoadingSurahs = false, surahsError = null) }
                     }
                     is Resource.Success -> {
-                        val list = result.data.orEmpty()
+                        val list = result.data.orEmpty().ifEmpty { QuranStaticData.ALL_SURAHS }
                         _uiState.update { state ->
                             state.copy(
                                 isLoadingSurahs = false,
@@ -282,10 +289,13 @@ class QuranViewModel @Inject constructor(
                         }
                     }
                     is Resource.Error -> {
-                        _uiState.update {
-                            it.copy(
+                        _uiState.update { state ->
+                            val fallback = state.surahs.ifEmpty { QuranStaticData.ALL_SURAHS }
+                            state.copy(
                                 isLoadingSurahs = false,
-                                surahsError = result.message ?: "Failed to load Surah list"
+                                surahs = fallback,
+                                filteredSurahs = filterSurahs(fallback, state.searchQuery),
+                                surahsError = null
                             )
                         }
                     }
@@ -315,17 +325,62 @@ class QuranViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Opens the entire Juz for reading offline.
+     */
     fun selectJuz(juz: JuzInfo) {
-        val targetSurah = _uiState.value.surahs.find { it.number == juz.startingSurahNumber }
-            ?: Surah(
-                number = juz.startingSurahNumber,
-                name = juz.startingSurahName,
-                arabicName = "",
-                englishMeaning = juz.englishName,
-                totalVerses = 0,
-                revelationType = ""
+        val startingSurah = _uiState.value.surahs.find { it.number == juz.startingSurahNumber }
+        val juzTitleSurah = Surah(
+            number = juz.number,
+            name = "Juz ${juz.number} (${juz.englishName})",
+            arabicName = juz.arabicName,
+            englishMeaning = "Starts at Surah ${startingSurah?.name ?: juz.startingSurahName}",
+            totalVerses = 0,
+            revelationType = "Juz ${juz.number}"
+        )
+        _uiState.update {
+            it.copy(
+                selectedSurah = juzTitleSurah,
+                selectedJuz = juz,
+                isLoadingVerses = true,
+                versesError = null,
+                verses = emptyList(),
+                isCurrentSurahDownloaded = false
             )
-        selectSurah(targetSurah)
+        }
+        loadJuzVerses(juz.number)
+    }
+
+    private fun loadJuzVerses(juzNumber: Int) {
+        viewModelScope.launch {
+            getJuzVersesUseCase(juzNumber).collect { result ->
+                when (result) {
+                    is Resource.Loading -> {
+                        _uiState.update { it.copy(isLoadingVerses = true) }
+                    }
+                    is Resource.Success -> {
+                        val list = result.data.orEmpty()
+                        _uiState.update { state ->
+                            val updatedSurah = state.selectedSurah?.copy(totalVerses = list.size)
+                            state.copy(
+                                isLoadingVerses = false,
+                                verses = list,
+                                selectedSurah = updatedSurah,
+                                versesError = null
+                            )
+                        }
+                    }
+                    is Resource.Error -> {
+                        _uiState.update {
+                            it.copy(
+                                isLoadingVerses = false,
+                                versesError = result.message ?: "Failed to load Juz verses"
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 
     fun selectSurah(surah: Surah) {
@@ -338,6 +393,7 @@ class QuranViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 selectedSurah = surah,
+                selectedJuz = null,
                 isLoadingVerses = true,
                 versesError = null,
                 verses = emptyList(),
@@ -347,11 +403,22 @@ class QuranViewModel @Inject constructor(
         loadVerses(surah.number)
     }
 
+    fun retryLoadVerses() {
+        val currentJuz = _uiState.value.selectedJuz
+        val currentSurah = _uiState.value.selectedSurah
+        if (currentJuz != null) {
+            selectJuz(currentJuz)
+        } else if (currentSurah != null) {
+            selectSurah(currentSurah)
+        }
+    }
+
     fun clearSelectedSurah() {
         stopAudio()
         _uiState.update {
             it.copy(
                 selectedSurah = null,
+                selectedJuz = null,
                 verses = emptyList(),
                 currentlyPlayingAyah = null,
                 isFullScreenMode = false,
@@ -532,7 +599,6 @@ class QuranViewModel @Inject constructor(
                     }
                 }
                 setOnErrorListener { _, _, _ ->
-                    // Fallback to default Alafasy reciter if custom Qirah fails
                     if (_uiState.value.selectedReciter != "ar.alafasy") {
                         try {
                             mediaPlayer?.reset()
@@ -577,29 +643,29 @@ class QuranViewModel @Inject constructor(
     }
 
     private fun createJuzList(): List<JuzInfo> = listOf(
-        JuzInfo(1, "الم (آلم)", "Alif Lam Meem", 1, "Al-Fatihah"),
-        JuzInfo(2, "سَيَقُولُ", "Sayaqool", 2, "Al-Baqarah"),
-        JuzInfo(3, "تِلْكَ الرُّسُلُ", "Tilkar Rusul", 2, "Al-Baqarah"),
-        JuzInfo(4, "لَنْ تَنَالُوا", "Lan Tanaalu", 3, "Ali 'Imran"),
-        JuzInfo(5, "وَالْمُحْصَنَاتُ", "Wal Muhsanat", 4, "An-Nisa"),
-        JuzInfo(6, "لَا يُحِبُّ اللَّهُ", "La Yuhibbullah", 4, "An-Nisa"),
-        JuzInfo(7, "وَإِذَا سَمِعُوا", "Wa Iza Sami'u", 5, "Al-Ma'idah"),
-        JuzInfo(8, "وَلَوْ أَنَّنَا", "Wa Law Annana", 6, "Al-An'am"),
-        JuzInfo(9, "قَالَ الْمَلَأُ", "Qalal Mala'u", 7, "Al-A'raf"),
-        JuzInfo(10, "وَاعْلَمُوا", "Wa'lamoo", 8, "Al-Anfal"),
-        JuzInfo(11, "يَعْتَذِرُونَ", "Ya'taziroon", 9, "At-Tawbah"),
+        JuzInfo(1, "الم (آلم)", "Alif Lam Meem", 1, "Al-Faatiha"),
+        JuzInfo(2, "سَيَقُولُ", "Sayaqool", 2, "Al-Baqara"),
+        JuzInfo(3, "تِلْكَ الرُّسُلُ", "Tilkar Rusul", 2, "Al-Baqara"),
+        JuzInfo(4, "لَنْ تَنَالُوا", "Lan Tanaalu", 3, "Aal-i-Imraan"),
+        JuzInfo(5, "وَالْمُحْصَنَاتُ", "Wal Muhsanat", 4, "An-Nisaa"),
+        JuzInfo(6, "لَا يُحِبُّ اللَّهُ", "La Yuhibbullah", 4, "An-Nisaa"),
+        JuzInfo(7, "وَإِذَا سَمِعُوا", "Wa Iza Sami'u", 5, "Al-Maaida"),
+        JuzInfo(8, "وَلَوْ أَنَّنَا", "Wa Law Annana", 6, "Al-An'aam"),
+        JuzInfo(9, "قَالَ الْمَلَأُ", "Qalal Mala'u", 7, "Al-A'raaf"),
+        JuzInfo(10, "وَاعْلَمُوا", "Wa'lamoo", 8, "Al-Anfaal"),
+        JuzInfo(11, "يَعْتَذِرُونَ", "Ya'taziroon", 9, "At-Tawba"),
         JuzInfo(12, "وَمَا مِنْ دَابَّةٍ", "Wa Ma Min Dabbah", 11, "Hud"),
         JuzInfo(13, "وَمَا أُبَرِّئُ", "Wa Ma Ubarri'u", 12, "Yusuf"),
         JuzInfo(14, "رُبَمَا", "Rubama", 15, "Al-Hijr"),
-        JuzInfo(15, "سُبْحَانَ الَّذِي", "Subhanallazi", 17, "Al-Isra"),
+        JuzInfo(15, "سُبْحَانَ الَّذِي", "Subhanallazi", 17, "Al-Israa"),
         JuzInfo(16, "قَالَ أَلَمْ", "Qal Alam", 18, "Al-Kahf"),
-        JuzInfo(17, "اقْتَرَبَ لِلنَّاسِ", "Iqtaraba Linnaas", 21, "Al-Anbiya"),
-        JuzInfo(18, "قَدْ أَفْلَحَ", "Qad Aflaha", 23, "Al-Mu'minun"),
-        JuzInfo(19, "وَقَالَ الَّذِينَ", "Wa Qalal Lazeena", 25, "Al-Furqan"),
+        JuzInfo(17, "اقْتَرَبَ لِلنَّاسِ", "Iqtaraba Linnaas", 21, "Al-Anbiyaa"),
+        JuzInfo(18, "قَدْ أَفْلَحَ", "Qad Aflaha", 23, "Al-Muminoon"),
+        JuzInfo(19, "وَقَالَ الَّذِينَ", "Wa Qalal Lazeena", 25, "Al-Furqaan"),
         JuzInfo(20, "أَمَّنْ خَلَقَ", "Amman Khalaq", 27, "An-Naml"),
-        JuzInfo(21, "اتْلُ مَا أُوحِيَ", "Utlu Ma Oohiya", 29, "Al-'Ankabut"),
-        JuzInfo(22, "وَمَنْ يَقْنُتْ", "Wa Man Yaqnut", 33, "Al-Ahzab"),
-        JuzInfo(23, "وَمَا لِيَ", "Wa Maliya", 36, "Ya-Sin"),
+        JuzInfo(21, "اتْلُ مَا أُوحِيَ", "Utlu Ma Oohiya", 29, "Al-Ankaboot"),
+        JuzInfo(22, "وَمَنْ يَقْنُتْ", "Wa Man Yaqnut", 33, "Al-Ahzaab"),
+        JuzInfo(23, "وَمَا لِيَ", "Wa Maliya", 36, "Yaseen"),
         JuzInfo(24, "فَمَنْ أَظْلَمُ", "Faman Azlamu", 39, "Az-Zumar"),
         JuzInfo(25, "إِلَيْهِ يُرَدُّ", "Ilayhi Yuraddu", 41, "Fussilat"),
         JuzInfo(26, "حم", "Ha-Meem", 46, "Al-Ahqaf"),

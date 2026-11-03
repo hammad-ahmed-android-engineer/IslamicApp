@@ -49,30 +49,12 @@ class PrayersViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
-            val location = locationHelper.getCurrentLocation()
-            if (location == null) {
-                val permissionGranted = locationHelper.hasLocationPermission()
-                val gpsEnabled = locationHelper.isLocationEnabled()
-                val msg = when {
-                    !permissionGranted -> "Location permission is required to calculate accurate prayer times."
-                    !gpsEnabled -> "GPS is turned off. Please turn on device location to calculate prayer times."
-                    else -> "Unable to determine your current location. Please check location settings and tap retry."
-                }
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = msg,
-                        cityName = "Location unavailable"
-                    )
-                }
-                return@launch
-            }
-
+            val location = locationHelper.getCurrentLocation() ?: locationHelper.getEffectiveLocation()
             val lat = location.latitude
             val lng = location.longitude
             val city = locationHelper.getCityAndCountry(lat, lng)
 
-            _uiState.update { it.copy(cityName = city) }
+            _uiState.update { it.copy(cityName = city, errorMessage = null) }
 
             launch {
                 getPrayerAlarmsUseCase().collect { alarms ->

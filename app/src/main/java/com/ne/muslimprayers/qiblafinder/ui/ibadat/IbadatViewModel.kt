@@ -31,6 +31,25 @@ class IbadatViewModel @Inject constructor(
     private val getDuasUseCase: GetDuasUseCase
 ) : ViewModel() {
 
+    companion object {
+        val PREFERRED_CATEGORY_ORDER = listOf(
+            "All",
+            "Quranic (Rabbana)",
+            "Morning & Evening",
+            "Prayer & Mosque",
+            "Forgiveness & Mercy",
+            "Protection & Hardship",
+            "Daily Life & Home",
+            "Food & Drink",
+            "Travel & Journey",
+            "Illness & Healing",
+            "Praise & Remembrance",
+            "Family & Society",
+            "Nature & Weather",
+            "Death & Afterlife"
+        )
+    }
+
     private val _uiState = MutableStateFlow(IbadatUiState())
     val uiState: StateFlow<IbadatUiState> = _uiState.asStateFlow()
 
@@ -47,13 +66,16 @@ class IbadatViewModel @Inject constructor(
                     }
                     is Resource.Success -> {
                         val list = result.data.orEmpty()
-                        val cats = listOf("All") + list.map { it.category }.distinct()
+                        val distinctCats = list.map { it.category }.distinct()
+                        val orderedCats = PREFERRED_CATEGORY_ORDER.filter { it == "All" || it in distinctCats } +
+                                distinctCats.filter { it !in PREFERRED_CATEGORY_ORDER }
+
                         _uiState.update { state ->
                             state.copy(
                                 isLoading = false,
                                 allDuas = list,
                                 filteredDuas = applyFilter(list, state.selectedCategory, state.searchQuery),
-                                categories = cats,
+                                categories = orderedCats,
                                 errorMessage = null
                             )
                         }
@@ -94,13 +116,16 @@ class IbadatViewModel @Inject constructor(
     }
 
     private fun applyFilter(list: List<DuaItem>, category: String, query: String): List<DuaItem> {
-        val catFiltered = if (category == "All") list else list.filter { it.category == category }
-        if (query.isBlank()) return catFiltered
+        val catFiltered = if (category == "All") list else list.filter { it.category.equals(category, ignoreCase = true) }
+        val cleanQuery = query.trim()
+        if (cleanQuery.isBlank()) return catFiltered
         return catFiltered.filter {
-            it.title.contains(query, ignoreCase = true) ||
-                    it.translation.contains(query, ignoreCase = true) ||
-                    it.transliteration.contains(query, ignoreCase = true) ||
-                    it.reference.contains(query, ignoreCase = true)
+            it.title.contains(cleanQuery, ignoreCase = true) ||
+                    it.category.contains(cleanQuery, ignoreCase = true) ||
+                    it.translation.contains(cleanQuery, ignoreCase = true) ||
+                    it.transliteration.contains(cleanQuery, ignoreCase = true) ||
+                    it.reference.contains(cleanQuery, ignoreCase = true) ||
+                    it.arabicText.contains(cleanQuery, ignoreCase = true)
         }
     }
 

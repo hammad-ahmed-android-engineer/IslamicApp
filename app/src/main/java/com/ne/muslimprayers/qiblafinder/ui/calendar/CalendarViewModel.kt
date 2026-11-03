@@ -44,24 +44,7 @@ class CalendarViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null, selectedYear = year, selectedMonth = month) }
 
-            val location = locationHelper.getCurrentLocation()
-            if (location == null) {
-                val permissionGranted = locationHelper.hasLocationPermission()
-                val gpsEnabled = locationHelper.isLocationEnabled()
-                val msg = when {
-                    !permissionGranted -> "Location permission is required to calculate Islamic calendar prayer times."
-                    !gpsEnabled -> "GPS is turned off. Please turn on device location to view the calendar."
-                    else -> "Unable to determine your current location. Please check location settings and tap retry."
-                }
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = msg
-                    )
-                }
-                return@launch
-            }
-
+            val location = locationHelper.getCurrentLocation() ?: locationHelper.getEffectiveLocation()
             val lat = location.latitude
             val lng = location.longitude
 

@@ -6,7 +6,7 @@ import com.ne.muslimprayers.qiblafinder.domain.model.Surah
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Repository interface for fetching Holy Quran Surahs and Verses.
+ * Repository interface for fetching Holy Quran Surahs, Juz, and Verses.
  */
 interface QuranRepository {
     /**
@@ -15,7 +15,12 @@ interface QuranRepository {
     fun getSurahList(): Flow<Resource<List<Surah>>>
 
     /**
-     * Fetches the verses (Ayahs) with Arabic and English translation for a specific Surah.
+     * Fetches the verses (Ayahs) with Arabic, Indo-Pak, and translations for a specific Surah.
      */
     fun getSurahVerses(surahNumber: Int): Flow<Resource<List<Ayah>>>
+
+    /**
+     * Fetches all verses (Ayahs) belonging to a specific Juz (1 to 30) for entire Juz reading.
+     */
+    fun getJuzVerses(juzNumber: Int): Flow<Resource<List<Ayah>>>
 }

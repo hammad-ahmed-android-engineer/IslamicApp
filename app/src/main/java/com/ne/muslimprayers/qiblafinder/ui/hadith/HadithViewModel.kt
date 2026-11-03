@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ne.muslimprayers.qiblafinder.core.common.Resource
 import com.ne.muslimprayers.qiblafinder.core.utils.StringUtils
+import com.ne.muslimprayers.qiblafinder.data.local.HadithDatabaseHelper
 import com.ne.muslimprayers.qiblafinder.domain.model.Hadith
 import com.ne.muslimprayers.qiblafinder.domain.usecase.hadith.GetHadithCollectionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -35,13 +36,18 @@ data class HadithUiState(
 
 @HiltViewModel
 class HadithViewModel @Inject constructor(
-    private val getHadithCollectionUseCase: GetHadithCollectionUseCase
+    private val getHadithCollectionUseCase: GetHadithCollectionUseCase,
+    private val hadithDbHelper: HadithDatabaseHelper
 ) : ViewModel() {
 
+    // The Six Canonical Hadith Books (Al-Kutub al-Sittah)
     val collections = listOf(
         HadithCollectionTab("Sahih Bukhari", "eng-bukhari", 97),
         HadithCollectionTab("Sahih Muslim", "eng-muslim", 56),
-        HadithCollectionTab("Abu Dawud", "eng-abudawud", 43)
+        HadithCollectionTab("Abu Dawud", "eng-abudawud", 43),
+        HadithCollectionTab("Jami' at-Tirmidhi", "eng-tirmidhi", 49),
+        HadithCollectionTab("Sunan an-Nasa'i", "eng-nasai", 51),
+        HadithCollectionTab("Sunan Ibn Majah", "eng-ibnmajah", 37)
     )
 
     private val _uiState = MutableStateFlow(
@@ -52,46 +58,78 @@ class HadithViewModel @Inject constructor(
     val uiState: StateFlow<HadithUiState> = _uiState.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            val title = hadithDbHelper.getSectionTitle(collections[0].edition, 1) ?: "Revelation"
+            _uiState.update { it.copy(currentChapterName = "${collections[0].title} • $title") }
+        }
         loadHadiths(collections[0].edition, 1)
     }
 
     fun selectCollection(index: Int) {
         if (index in collections.indices) {
             val item = collections[index]
-            _uiState.update {
-                it.copy(
-                    selectedCollectionIndex = index,
-                    currentSection = 1,
-                    maxSections = item.maxSections
-                )
+            viewModelScope.launch {
+                val chapterName = hadithDbHelper.getSectionTitle(item.edition, 1) ?: "Chapter 1"
+                _uiState.update {
+                    it.copy(
+                        selectedCollectionIndex = index,
+                        currentSection = 1,
+                        maxSections = item.maxSections,
+                        currentChapterName = "${item.title} • $chapterName"
+                    )
+                }
+                loadHadiths(item.edition, 1)
             }
-            loadHadiths(item.edition, 1)
         }
     }
 
     fun nextSection() {
         val next = _uiState.value.currentSection + 1
         if (next <= _uiState.value.maxSections) {
-            _uiState.update { it.copy(currentSection = next) }
-            val currentEdition = collections[_uiState.value.selectedCollectionIndex].edition
-            loadHadiths(currentEdition, next)
+            val item = collections[_uiState.value.selectedCollectionIndex]
+            viewModelScope.launch {
+                val chapterName = hadithDbHelper.getSectionTitle(item.edition, next) ?: "Chapter $next"
+                _uiState.update {
+                    it.copy(
+                        currentSection = next,
+                        currentChapterName = "${item.title} • $chapterName"
+                    )
+                }
+                loadHadiths(item.edition, next)
+            }
         }
     }
 
     fun previousSection() {
         val prev = _uiState.value.currentSection - 1
         if (prev >= 1) {
-            _uiState.update { it.copy(currentSection = prev) }
-            val currentEdition = collections[_uiState.value.selectedCollectionIndex].edition
-            loadHadiths(currentEdition, prev)
+            val item = collections[_uiState.value.selectedCollectionIndex]
+            viewModelScope.launch {
+                val chapterName = hadithDbHelper.getSectionTitle(item.edition, prev) ?: "Chapter $prev"
+                _uiState.update {
+                    it.copy(
+                        currentSection = prev,
+                        currentChapterName = "${item.title} • $chapterName"
+                    )
+                }
+                loadHadiths(item.edition, prev)
+            }
         }
     }
 
     fun goToSection(section: Int) {
         val target = section.coerceIn(1, _uiState.value.maxSections)
-        _uiState.update { it.copy(currentSection = target) }
-        val currentEdition = collections[_uiState.value.selectedCollectionIndex].edition
-        loadHadiths(currentEdition, target)
+        val item = collections[_uiState.value.selectedCollectionIndex]
+        viewModelScope.launch {
+            val chapterName = hadithDbHelper.getSectionTitle(item.edition, target) ?: "Chapter $target"
+            _uiState.update {
+                it.copy(
+                    currentSection = target,
+                    currentChapterName = "${item.title} • $chapterName"
+                )
+            }
+            loadHadiths(item.edition, target)
+        }
     }
 
     fun loadHadiths(edition: String, section: Int) {
@@ -103,7 +141,13 @@ class HadithViewModel @Inject constructor(
                     }
                     is Resource.Success -> {
                         val list = result.data.orEmpty()
-                        val chapterName = list.firstOrNull()?.chapter ?: "Section $section"
+                        val chapterTitle = hadithDbHelper.getSectionTitle(edition, section)
+                        val collectionTitle = collections.find { it.edition == edition }?.title ?: "Hadith"
+                        val chapterName = if (!chapterTitle.isNullOrBlank()) {
+                            "$collectionTitle • $chapterTitle"
+                        } else {
+                            list.firstOrNull()?.chapter ?: "$collectionTitle • Chapter $section"
+                        }
                         _uiState.update { state ->
                             state.copy(
                                 isLoading = false,

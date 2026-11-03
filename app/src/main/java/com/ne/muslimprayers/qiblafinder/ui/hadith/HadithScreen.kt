@@ -104,11 +104,13 @@ fun HadithScreen(
                 edgePadding = 16.sdp,
                 divider = {},
                 indicator = { tabPositions ->
-                    TabRowDefaults.Indicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[state.selectedCollectionIndex]),
-                        color = MedinaSage,
-                        height = 2.5.sdp
-                    )
+                    if (state.selectedCollectionIndex in tabPositions.indices) {
+                        TabRowDefaults.Indicator(
+                            modifier = Modifier.tabIndicatorOffset(tabPositions[state.selectedCollectionIndex]),
+                            color = MedinaSage,
+                            height = 2.5.sdp
+                        )
+                    }
                 }
             ) {
                 viewModel.collections.forEachIndexed { index, tab ->

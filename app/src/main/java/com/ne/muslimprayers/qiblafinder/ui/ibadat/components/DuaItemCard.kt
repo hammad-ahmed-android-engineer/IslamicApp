@@ -39,13 +39,20 @@ fun DuaItemCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                AppText.TitleMedium(
-                    text = dua.title,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f),
-                    maxLines = 1
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    AppText.Caption(
+                        text = dua.category,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.height(2.sdp))
+                    AppText.TitleMedium(
+                        text = dua.title,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2
+                    )
+                }
 
                 Row {
                     IconButton(onClick = onCopy) {
