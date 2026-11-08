@@ -1,14 +1,13 @@
 package com.ne.muslimprayers.qiblafinder.ui.hadith.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -21,18 +20,19 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import com.ne.muslimprayers.qiblafinder.R
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.SuccessGreen
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.domain.model.Hadith
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
@@ -60,19 +60,19 @@ fun HadithCardItem(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(32.sdp)
+                            .size(AppDimensions.buttonSmallHeight)
                             .clip(CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.CheckCircle,
-                            contentDescription = "Authentic",
+                            contentDescription = stringResource(R.string.hadith_grade_sahih),
                             tint = SuccessGreen,
-                            modifier = Modifier.size(20.sdp)
+                            modifier = Modifier.size(AppDimensions.iconMedium)
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(8.sdp))
+                    Spacer(modifier = Modifier.width(AppDimensions.paddingSmall))
 
                     Column(modifier = Modifier.weight(1f)) {
                         AppText.TitleMedium(
@@ -93,24 +93,24 @@ fun HadithCardItem(
                     IconButton(onClick = onCopy) {
                         Icon(
                             imageVector = Icons.Default.ContentCopy,
-                            contentDescription = "Copy",
+                            contentDescription = stringResource(R.string.copy),
                             tint = TextSecondary,
-                            modifier = Modifier.size(18.sdp)
+                            modifier = Modifier.size(AppDimensions.iconMedium)
                         )
                     }
                     IconButton(onClick = onShare) {
                         Icon(
                             imageVector = Icons.Default.Share,
-                            contentDescription = "Share",
+                            contentDescription = stringResource(R.string.share),
                             tint = TextSecondary,
-                            modifier = Modifier.size(18.sdp)
+                            modifier = Modifier.size(AppDimensions.iconMedium)
                         )
                     }
                 }
             }
 
             if (hadith.arabicText.isNotBlank()) {
-                Spacer(modifier = Modifier.height(6.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingSmall))
                 AppText.ArabicText(
                     text = hadith.arabicText,
                     color = TextPrimary,
@@ -119,7 +119,7 @@ fun HadithCardItem(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.sdp))
+            Spacer(modifier = Modifier.height(AppDimensions.paddingSmall))
 
             AppText.BodyMedium(
                 text = "\"${hadith.englishText}\"",
@@ -127,7 +127,7 @@ fun HadithCardItem(
                 maxLines = 3
             )
 
-            Spacer(modifier = Modifier.height(12.sdp))
+            Spacer(modifier = Modifier.height(AppDimensions.paddingSmall))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -139,11 +139,14 @@ fun HadithCardItem(
                         containerColor = MedinaSage,
                         contentColor = PureAlabaster
                     ),
-                    shape = RoundedCornerShape(14.sdp),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.sdp, vertical = 6.sdp)
+                    shape = RoundedCornerShape(AppDimensions.cornerMedium),
+                    contentPadding = PaddingValues(
+                        horizontal = AppDimensions.paddingMedium,
+                        vertical = AppDimensions.paddingTiny
+                    )
                 ) {
-                    Text(
-                        text = "Read More",
+                    AppText.LabelMedium(
+                        text = stringResource(R.string.hadith_read_full),
                         fontWeight = FontWeight.Bold,
                         color = PureAlabaster
                     )

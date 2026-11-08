@@ -1,5 +1,6 @@
 package com.ne.muslimprayers.qiblafinder.data.repository
 
+import com.ne.muslimprayers.qiblafinder.core.common.PrayerSettingsManager
 import com.ne.muslimprayers.qiblafinder.core.common.Resource
 import com.ne.muslimprayers.qiblafinder.core.utils.prayer.HijriCalendarCalculator
 import com.ne.muslimprayers.qiblafinder.core.utils.prayer.PrayerTimeCalculator
@@ -22,21 +23,15 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Implementation of [PrayerScheduleRepository] providing 100% offline-ready prayer schedules.
- *
- * STRATEGY:
- * 1. Online: Fetches live monthly schedule from AlAdhan API and persists into [PrayerLocalCache].
- * 2. Offline with Cache: Immediately uses cached monthly data.
- * 3. Offline without Cache: Computes high-precision astronomical prayer times and Hijri dates
- *    using [PrayerTimeCalculator] and [HijriCalendarCalculator].
- *
- * GUARANTEE: Never fails or displays blank/error states when offline.
+ * Implementation of [PrayerScheduleRepository] providing 100% offline-ready prayer schedules
+ * using the user's selected (or auto-detected regional) Calculation Method and Asr Juristic school.
  */
 @Singleton
 class PrayerScheduleRepositoryImpl @Inject constructor(
     private val apiService: PrayerApiService,
     private val prayerAlarmDao: PrayerAlarmDao,
-    private val prayerLocalCache: PrayerLocalCache
+    private val prayerLocalCache: PrayerLocalCache,
+    private val prayerSettingsManager: PrayerSettingsManager
 ) : PrayerScheduleRepository {
 
     override fun getPrayerSchedule(
@@ -51,49 +46,106 @@ class PrayerScheduleRepositoryImpl @Inject constructor(
         val effectiveLat = if (latitude == 0.0 && longitude == 0.0) 21.4225 else latitude
         val effectiveLng = if (latitude == 0.0 && longitude == 0.0) 39.8262 else longitude
 
+        // Auto-detect regional method & Asr school if user has not manually locked in a selection
+        prayerSettingsManager.autoDetectIfNotSelected(effectiveLat, effectiveLng)
+        val settings = prayerSettingsManager.getCurrentSettings()
+        val apiMethodId = settings.method.apiMethodId
+        val asrSchool = settings.asrJuristic
+        val hijriOffset = settings.hijriOffset
+
         val alarms = prayerAlarmDao.getAllAlarms().firstOrNull().orEmpty()
-        val alarmMap = alarms.associate { it.prayerName.uppercase() to it.isActive }
-
-        // 1. Try remote API first and update local cache
-        try {
-            val response = apiService.getCalendar(effectiveLat, effectiveLng, month, year)
-            val scheduleList = response.data.orEmpty()
-            if (scheduleList.isNotEmpty()) {
-                prayerLocalCache.saveCalendar(effectiveLat, effectiveLng, year, month, scheduleList)
-                val dayData = scheduleList.find {
-                    it.dateResponse?.gregorian?.day?.toIntOrNull() == day
-                } ?: scheduleList.firstOrNull()
-
-                if (dayData != null) {
-                    val schedule = buildScheduleFromApiData(dayData, alarmMap)
-                    emit(Resource.Success(schedule))
-                    return@flow
-                }
-            }
-        } catch (_: Exception) {
-            // Network failure - fall through to offline local cache & calculation
+        val alarmMap = if (alarms.isNotEmpty()) {
+            alarms.associate { it.prayerName.uppercase() to it.isActive }
+        } else {
+            settings.prayerAlarmsEnabled.mapKeys { it.key.name.uppercase() }
         }
 
-        // 2. Try offline cache
-        val cachedList = prayerLocalCache.getCalendar(effectiveLat, effectiveLng, year, month)
+        // 1. Check offline cache first for instant emission if available
+        val cachedList = prayerLocalCache.getCalendar(
+            lat = effectiveLat,
+            lng = effectiveLng,
+            year = year,
+            month = month,
+            methodId = apiMethodId,
+            school = asrSchool,
+            hijriOffset = hijriOffset
+        )
         if (!cachedList.isNullOrEmpty()) {
             val dayData = cachedList.find {
                 it.dateResponse?.gregorian?.day?.toIntOrNull() == day
             } ?: cachedList.firstOrNull()
 
             if (dayData != null) {
-                val schedule = buildScheduleFromApiData(dayData, alarmMap)
+                val schedule = buildScheduleFromApiData(
+                    dayData = dayData,
+                    alarmMap = alarmMap,
+                    year = year,
+                    month = month,
+                    day = day,
+                    hijriOffset = hijriOffset
+                )
                 emit(Resource.Success(schedule))
-                return@flow
+            }
+        } else {
+            // Emit instant local astronomical calculation immediately while network fetches
+            try {
+                val localSchedule = buildScheduleFromCalculation(
+                    lat = effectiveLat,
+                    lng = effectiveLng,
+                    year = year,
+                    month = month,
+                    day = day,
+                    alarmMap = alarmMap,
+                    settingsManager = prayerSettingsManager
+                )
+                emit(Resource.Success(localSchedule))
+            } catch (_: Exception) {
+                // Ignore and continue to network
             }
         }
 
-        // 3. Complete Offline Synthesis via Astronomical Solar & Lunar Formulas
+        // 2. Try remote API with exact calculation method, school, and adjustment
         try {
-            val schedule = buildScheduleFromCalculation(effectiveLat, effectiveLng, year, month, day, alarmMap)
-            emit(Resource.Success(schedule))
-        } catch (e: Exception) {
-            emit(Resource.Error(e.localizedMessage ?: "Failed to calculate offline prayer timings"))
+            val response = apiService.getCalendar(
+                latitude = effectiveLat,
+                longitude = effectiveLng,
+                month = month,
+                year = year,
+                method = apiMethodId,
+                school = asrSchool,
+                adjustment = hijriOffset
+            )
+            val scheduleList = response.data.orEmpty()
+            if (scheduleList.isNotEmpty()) {
+                prayerLocalCache.saveCalendar(
+                    lat = effectiveLat,
+                    lng = effectiveLng,
+                    year = year,
+                    month = month,
+                    data = scheduleList,
+                    methodId = apiMethodId,
+                    school = asrSchool,
+                    hijriOffset = hijriOffset
+                )
+                val dayData = scheduleList.find {
+                    it.dateResponse?.gregorian?.day?.toIntOrNull() == day
+                } ?: scheduleList.firstOrNull()
+
+                if (dayData != null) {
+                    val schedule = buildScheduleFromApiData(
+                        dayData = dayData,
+                        alarmMap = alarmMap,
+                        year = year,
+                        month = month,
+                        day = day,
+                        hijriOffset = hijriOffset
+                    )
+                    emit(Resource.Success(schedule))
+                    return@flow
+                }
+            }
+        } catch (_: Exception) {
+            // Network unavailable - already emitted cached or local astronomical calculation
         }
     }
 
@@ -108,13 +160,36 @@ class PrayerScheduleRepositoryImpl @Inject constructor(
         val effectiveLat = if (latitude == 0.0 && longitude == 0.0) 21.4225 else latitude
         val effectiveLng = if (latitude == 0.0 && longitude == 0.0) 39.8262 else longitude
 
+        prayerSettingsManager.autoDetectIfNotSelected(effectiveLat, effectiveLng)
+        val settings = prayerSettingsManager.getCurrentSettings()
+        val apiMethodId = settings.method.apiMethodId
+        val asrSchool = settings.asrJuristic
+        val hijriOffset = settings.hijriOffset
+
         // 1. Try remote API first and update cache
         try {
-            val response = apiService.getCalendar(effectiveLat, effectiveLng, month, year)
+            val response = apiService.getCalendar(
+                latitude = effectiveLat,
+                longitude = effectiveLng,
+                month = month,
+                year = year,
+                method = apiMethodId,
+                school = asrSchool,
+                adjustment = hijriOffset
+            )
             val scheduleList = response.data.orEmpty()
             if (scheduleList.isNotEmpty()) {
-                prayerLocalCache.saveCalendar(effectiveLat, effectiveLng, year, month, scheduleList)
-                val calendarList = mapScheduleListToCalendarInfo(scheduleList, month, year)
+                prayerLocalCache.saveCalendar(
+                    lat = effectiveLat,
+                    lng = effectiveLng,
+                    year = year,
+                    month = month,
+                    data = scheduleList,
+                    methodId = apiMethodId,
+                    school = asrSchool,
+                    hijriOffset = hijriOffset
+                )
+                val calendarList = mapScheduleListToCalendarInfo(scheduleList, month, year, hijriOffset)
                 emit(Resource.Success(calendarList))
                 return@flow
             }
@@ -123,16 +198,30 @@ class PrayerScheduleRepositoryImpl @Inject constructor(
         }
 
         // 2. Try offline cache
-        val cachedList = prayerLocalCache.getCalendar(effectiveLat, effectiveLng, year, month)
+        val cachedList = prayerLocalCache.getCalendar(
+            lat = effectiveLat,
+            lng = effectiveLng,
+            year = year,
+            month = month,
+            methodId = apiMethodId,
+            school = asrSchool,
+            hijriOffset = hijriOffset
+        )
         if (!cachedList.isNullOrEmpty()) {
-            val calendarList = mapScheduleListToCalendarInfo(cachedList, month, year)
+            val calendarList = mapScheduleListToCalendarInfo(cachedList, month, year, hijriOffset)
             emit(Resource.Success(calendarList))
             return@flow
         }
 
         // 3. Complete Offline Monthly Generation via Astronomical Formulas
         try {
-            val calendarList = generateMonthlyCalendarOffline(effectiveLat, effectiveLng, year, month)
+            val calendarList = generateMonthlyCalendarOffline(
+                lat = effectiveLat,
+                lng = effectiveLng,
+                year = year,
+                month = month,
+                settingsManager = prayerSettingsManager
+            )
             emit(Resource.Success(calendarList))
         } catch (e: Exception) {
             emit(Resource.Error(e.localizedMessage ?: "Failed to generate Islamic calendar"))
@@ -141,7 +230,11 @@ class PrayerScheduleRepositoryImpl @Inject constructor(
 
     private fun buildScheduleFromApiData(
         dayData: ScheduleResponse,
-        alarmMap: Map<String, Boolean>
+        alarmMap: Map<String, Boolean>,
+        year: Int = Calendar.getInstance().get(Calendar.YEAR),
+        month: Int = Calendar.getInstance().get(Calendar.MONTH) + 1,
+        day: Int = Calendar.getInstance().get(Calendar.DAY_OF_MONTH),
+        hijriOffset: Int = 0
     ): PrayerDaySchedule {
         val timings = dayData.timingResponse
         val cleanTime = { raw: String? -> raw?.substringBefore(" ")?.trim() ?: "00:00" }
@@ -162,15 +255,25 @@ class PrayerScheduleRepositoryImpl @Inject constructor(
             SinglePrayer(PrayerType.ISHA, ishaTime, formatTo12Hour(ishaTime), isAlarmActive = alarmMap["ISHA"] ?: false)
         )
 
-        val (nextPrayer, currentPrayer, remainingMillis) = calculateNextAndCurrentPrayer(prayers)
-        val updatedPrayers = prayers.map { it.copy(isNext = it.type == nextPrayer.type) }
+        val timingState = calculateNextAndCurrentPrayer(prayers)
+        val updatedPrayers = prayers.map { it.copy(isNext = it.type == timingState.nextPrayer.type) }
 
         val hijri = dayData.dateResponse?.hijri
         val gregorian = dayData.dateResponse?.gregorian
 
-        val hijriFormatted = if (hijri != null) {
+        val calculatedHijri = HijriCalendarCalculator.calculate(
+            year = year,
+            month = month,
+            day = day,
+            hijriOffsetDays = hijriOffset
+        )
+
+        // When user applies a Hijri adjustment (or if API hijri is missing), use the offset-adjusted calculation
+        val hijriFormatted = if (hijriOffset != 0 || hijri == null) {
+            calculatedHijri.formatted
+        } else {
             "${hijri.day} ${hijri.month?.en ?: ""} ${hijri.year} AH"
-        } else ""
+        }
 
         val gregorianFormatted = if (gregorian != null) {
             "${gregorian.weekday?.en ?: ""}, ${gregorian.day} ${gregorian.month?.en ?: ""} ${gregorian.year}"
@@ -185,9 +288,10 @@ class PrayerScheduleRepositoryImpl @Inject constructor(
             asr = updatedPrayers[3],
             maghrib = updatedPrayers[4],
             isha = updatedPrayers[5],
-            nextPrayer = nextPrayer.copy(isNext = true),
-            currentPrayer = currentPrayer,
-            remainingMillisToNextPrayer = remainingMillis
+            nextPrayer = timingState.nextPrayer.copy(isNext = true),
+            currentPrayer = timingState.currentPrayer,
+            remainingMillisToNextPrayer = timingState.remainingMillis,
+            nextPrayerTargetEpochMillis = timingState.targetEpochMillis
         )
     }
 
@@ -197,10 +301,25 @@ class PrayerScheduleRepositoryImpl @Inject constructor(
         year: Int,
         month: Int,
         day: Int,
-        alarmMap: Map<String, Boolean>
+        alarmMap: Map<String, Boolean>,
+        settingsManager: PrayerSettingsManager
     ): PrayerDaySchedule {
-        val times = PrayerTimeCalculator.calculate(lat, lng, year, month, day)
-        val hijri = HijriCalendarCalculator.calculate(year, month, day)
+        val settings = settingsManager.getCurrentSettings()
+        val times = PrayerTimeCalculator.calculate(
+            latitude = lat,
+            longitude = lng,
+            year = year,
+            month = month,
+            day = day,
+            method = settings.method,
+            asrJuristic = settings.asrJuristic
+        )
+        val hijri = HijriCalendarCalculator.calculate(
+            year = year,
+            month = month,
+            day = day,
+            hijriOffsetDays = settings.hijriOffset
+        )
 
         val cal = Calendar.getInstance().apply {
             set(Calendar.YEAR, year)
@@ -218,8 +337,8 @@ class PrayerScheduleRepositoryImpl @Inject constructor(
             SinglePrayer(PrayerType.ISHA, times.isha, formatTo12Hour(times.isha), isAlarmActive = alarmMap["ISHA"] ?: false)
         )
 
-        val (nextPrayer, currentPrayer, remainingMillis) = calculateNextAndCurrentPrayer(prayers)
-        val updatedPrayers = prayers.map { it.copy(isNext = it.type == nextPrayer.type) }
+        val timingState = calculateNextAndCurrentPrayer(prayers)
+        val updatedPrayers = prayers.map { it.copy(isNext = it.type == timingState.nextPrayer.type) }
 
         return PrayerDaySchedule(
             dateGregorian = gregorianFormatted,
@@ -230,59 +349,18 @@ class PrayerScheduleRepositoryImpl @Inject constructor(
             asr = updatedPrayers[3],
             maghrib = updatedPrayers[4],
             isha = updatedPrayers[5],
-            nextPrayer = nextPrayer.copy(isNext = true),
-            currentPrayer = currentPrayer,
-            remainingMillisToNextPrayer = remainingMillis
+            nextPrayer = timingState.nextPrayer.copy(isNext = true),
+            currentPrayer = timingState.currentPrayer,
+            remainingMillisToNextPrayer = timingState.remainingMillis,
+            nextPrayerTargetEpochMillis = timingState.targetEpochMillis
         )
-    }
-
-    private fun calculateNextAndCurrentPrayer(
-        prayers: List<SinglePrayer>
-    ): Triple<SinglePrayer, SinglePrayer, Long> {
-        val now = Calendar.getInstance()
-        val currentMinutes = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
-
-        val timeToMinutes = { timeStr: String ->
-            val parts = timeStr.split(":")
-            val h = parts.getOrNull(0)?.toIntOrNull() ?: 0
-            val m = parts.getOrNull(1)?.toIntOrNull() ?: 0
-            h * 60 + m
-        }
-
-        var nextPrayer: SinglePrayer? = null
-        var remainingMillis = 0L
-
-        for (p in prayers) {
-            val prayerMinutes = timeToMinutes(p.time24)
-            if (prayerMinutes > currentMinutes) {
-                nextPrayer = p
-                val diffMin = prayerMinutes - currentMinutes
-                remainingMillis = diffMin * 60 * 1000L
-                break
-            }
-        }
-
-        if (nextPrayer == null) {
-            nextPrayer = prayers.first()
-            val fajrMin = timeToMinutes(nextPrayer.time24)
-            val diffMin = (24 * 60 - currentMinutes) + fajrMin
-            remainingMillis = diffMin * 60 * 1000L
-        }
-
-        val nextPrayerIndex = prayers.indexOfFirst { it.type == nextPrayer.type }
-        val currentPrayer = if (nextPrayerIndex > 0) {
-            prayers[nextPrayerIndex - 1]
-        } else {
-            prayers.last()
-        }
-
-        return Triple(nextPrayer, currentPrayer, remainingMillis)
     }
 
     private fun mapScheduleListToCalendarInfo(
         scheduleList: List<ScheduleResponse>,
         month: Int,
-        year: Int
+        year: Int,
+        hijriOffset: Int = 0
     ): List<IslamicCalendarInfo> {
         return scheduleList.mapNotNull { item ->
             val g = item.dateResponse?.gregorian
@@ -292,13 +370,24 @@ class PrayerScheduleRepositoryImpl @Inject constructor(
             val gYear = g.year?.toIntOrNull() ?: year
             val gFormatted = "${g.weekday?.en ?: ""}, $gDay ${g.month?.en ?: ""} $gYear"
 
-            val hDay = h?.day?.toIntOrNull() ?: 1
-            val hMonthName = h?.month?.en ?: ""
-            val hYear = h?.year?.toIntOrNull() ?: 1447
+            val calcHijri = HijriCalendarCalculator.calculate(
+                year = gYear,
+                month = gMonth,
+                day = gDay,
+                hijriOffsetDays = hijriOffset
+            )
+
+            val hDay = if (hijriOffset != 0 || h == null) calcHijri.day else (h.day?.toIntOrNull() ?: calcHijri.day)
+            val hMonthName = if (hijriOffset != 0 || h == null) calcHijri.monthName else (h.month?.en ?: calcHijri.monthName)
+            val hYear = if (hijriOffset != 0 || h == null) calcHijri.year else (h.year?.toIntOrNull() ?: calcHijri.year)
             val hFormatted = "$hDay $hMonthName $hYear AH"
 
             val gWeekday = g.weekday?.en ?: ""
-            val holidays = h?.holidays?.filterNotNull() ?: emptyList()
+            val holidays = if (hijriOffset != 0 || h == null) {
+                calcHijri.holidays
+            } else {
+                h.holidays?.filterNotNull().orEmpty().ifEmpty { calcHijri.holidays }
+            }
 
             val timings = item.timingResponse
             val cleanTime = { raw: String? -> raw?.substringBefore(" ")?.trim() ?: "00:00" }
@@ -332,8 +421,10 @@ class PrayerScheduleRepositoryImpl @Inject constructor(
         lat: Double,
         lng: Double,
         year: Int,
-        month: Int
+        month: Int,
+        settingsManager: PrayerSettingsManager
     ): List<IslamicCalendarInfo> {
+        val settings = settingsManager.getCurrentSettings()
         val cal = Calendar.getInstance().apply {
             set(Calendar.YEAR, year)
             set(Calendar.MONTH, month - 1)
@@ -346,8 +437,21 @@ class PrayerScheduleRepositoryImpl @Inject constructor(
         val list = mutableListOf<IslamicCalendarInfo>()
         for (day in 1..maxDays) {
             cal.set(Calendar.DAY_OF_MONTH, day)
-            val times = PrayerTimeCalculator.calculate(lat, lng, year, month, day)
-            val hijri = HijriCalendarCalculator.calculate(year, month, day)
+            val times = PrayerTimeCalculator.calculate(
+                latitude = lat,
+                longitude = lng,
+                year = year,
+                month = month,
+                day = day,
+                method = settings.method,
+                asrJuristic = settings.asrJuristic
+            )
+            val hijri = HijriCalendarCalculator.calculate(
+                year = year,
+                month = month,
+                day = day,
+                hijriOffsetDays = settings.hijriOffset
+            )
 
             val prayers = listOf(
                 SinglePrayer(PrayerType.FAJR, times.fajr, formatTo12Hour(times.fajr)),
@@ -385,6 +489,116 @@ class PrayerScheduleRepositoryImpl @Inject constructor(
             if (date != null) sdf12.format(date) else time24
         } catch (_: Exception) {
             time24
+        }
+    }
+
+    data class PrayerTimingWindow(
+        val nextPrayer: SinglePrayer,
+        val currentPrayer: SinglePrayer?,
+        val remainingMillis: Long,
+        val targetEpochMillis: Long
+    )
+
+    companion object {
+        /**
+         * Computes the active prayer, next prayer, exact wall-clock target epoch millis,
+         * and remaining milliseconds using exact wall-clock time (`nowMillis`).
+         *
+         * Only the 5 obligatory Salawat (Fajr, Dhuhr, Asr, Maghrib, Isha) are targeted as the
+         * upcoming Salah countdown; Sunrise marks the end of Fajr time.
+         */
+        fun calculateNextAndCurrentPrayer(
+            prayers: List<SinglePrayer>,
+            nowMillis: Long = System.currentTimeMillis()
+        ): PrayerTimingWindow {
+            val nowCal = Calendar.getInstance().apply { timeInMillis = nowMillis }
+
+            fun epochForTimeToday(timeStr: String, dayOffset: Int = 0): Long {
+                val parts = timeStr.trim().split(":")
+                val h = parts.getOrNull(0)?.toIntOrNull() ?: 0
+                val m = parts.getOrNull(1)?.toIntOrNull() ?: 0
+                return (nowCal.clone() as Calendar).apply {
+                    if (dayOffset != 0) {
+                        add(Calendar.DAY_OF_YEAR, dayOffset)
+                    }
+                    set(Calendar.HOUR_OF_DAY, h)
+                    set(Calendar.MINUTE, m)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+            }
+
+            val obligatoryPrayers = prayers.filter { it.type != PrayerType.SUNRISE }
+            val sunrisePrayer = prayers.find { it.type == PrayerType.SUNRISE }
+            val sunriseEpoch = sunrisePrayer?.let { epochForTimeToday(it.time24) } ?: Long.MAX_VALUE
+
+            var nextPrayer: SinglePrayer? = null
+            var targetEpochMillis = 0L
+
+            for (p in obligatoryPrayers) {
+                val prayerEpoch = epochForTimeToday(p.time24, dayOffset = 0)
+                if (prayerEpoch > nowMillis) {
+                    nextPrayer = p
+                    targetEpochMillis = prayerEpoch
+                    break
+                }
+            }
+
+            // If all 5 obligatory prayers for today have passed, next prayer is tomorrow's Fajr
+            if (nextPrayer == null) {
+                val fajr = obligatoryPrayers.firstOrNull() ?: prayers.first()
+                nextPrayer = fajr
+                targetEpochMillis = epochForTimeToday(fajr.time24, dayOffset = 1)
+            }
+
+            val remainingMillis = (targetEpochMillis - nowMillis).coerceAtLeast(0L)
+
+            // Determine current active obligatory prayer
+            val nextIdx = obligatoryPrayers.indexOfFirst { it.type == nextPrayer.type }
+            val previousObligatory = if (nextIdx > 0) {
+                obligatoryPrayers[nextIdx - 1]
+            } else {
+                // Before today's Fajr or after today's Isha -> Isha is the current prayer window
+                obligatoryPrayers.lastOrNull()
+            }
+
+            // Note: Fajr ends at Sunrise; between Sunrise and Dhuhr there is no active obligatory fard prayer
+            val currentPrayer = if (previousObligatory?.type == PrayerType.FAJR && nowMillis >= sunriseEpoch) {
+                null
+            } else {
+                previousObligatory
+            }
+
+            return PrayerTimingWindow(
+                nextPrayer = nextPrayer,
+                currentPrayer = currentPrayer,
+                remainingMillis = remainingMillis,
+                targetEpochMillis = targetEpochMillis
+            )
+        }
+
+        /**
+         * Recalculates `nextPrayer`, `currentPrayer`, `remainingMillisToNextPrayer`, and `nextPrayerTargetEpochMillis`
+         * against the real wall-clock time `nowMillis`.
+         */
+        fun recalculateScheduleForNow(
+            schedule: PrayerDaySchedule,
+            nowMillis: Long = System.currentTimeMillis()
+        ): PrayerDaySchedule {
+            val window = calculateNextAndCurrentPrayer(schedule.allPrayers, nowMillis)
+            val updated = schedule.allPrayers.map { it.copy(isNext = it.type == window.nextPrayer.type) }
+            return schedule.copy(
+                fajr = updated[0],
+                sunrise = updated[1],
+                dhuhr = updated[2],
+                asr = updated[3],
+                maghrib = updated[4],
+                isha = updated[5],
+                nextPrayer = window.nextPrayer.copy(isNext = true),
+                currentPrayer = window.currentPrayer,
+                remainingMillisToNextPrayer = window.remainingMillis,
+                nextPrayerTargetEpochMillis = window.targetEpochMillis
+            )
         }
     }
 }

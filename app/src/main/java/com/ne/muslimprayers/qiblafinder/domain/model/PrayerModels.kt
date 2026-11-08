@@ -28,7 +28,8 @@ data class PrayerDaySchedule(
     val isha: SinglePrayer,
     val nextPrayer: SinglePrayer? = null,
     val currentPrayer: SinglePrayer? = null,
-    val remainingMillisToNextPrayer: Long = 0L
+    val remainingMillisToNextPrayer: Long = 0L,
+    val nextPrayerTargetEpochMillis: Long = 0L
 ) {
     val allPrayers: List<SinglePrayer>
         get() = listOf(fajr, sunrise, dhuhr, asr, maghrib, isha)
@@ -69,5 +70,8 @@ data class QiblaState(
     val userLatitude: Double = 0.0,
     val userLongitude: Double = 0.0,
     val cityName: String = "",
-    val isLocationAvailable: Boolean = false
+    val isLocationAvailable: Boolean = false,
+    val distanceToKaabaKm: Double = 0.0,
+    val sensorAccuracy: Int = 3,
+    val isSensorAvailable: Boolean = true
 )

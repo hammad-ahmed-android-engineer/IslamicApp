@@ -13,7 +13,9 @@ interface PrayerApiService {
         @Query("longitude") longitude: Double,
         @Query("month") month: Int,
         @Query("year") year: Int,
-        @Query("method") method: Int = 2
+        @Query("method") method: Int = 3,
+        @Query("school") school: Int = 0,
+        @Query("adjustment") adjustment: Int = 0
     ): PrayerScheduleResponse
 
     @GET("qibla/{latitude}/{longitude}")

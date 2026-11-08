@@ -13,8 +13,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -28,7 +31,7 @@ import kotlin.math.sin
 /**
  * Authentic Quranic Ayah End Rosette (آیت کا گول دائرہ و نشان)
  * Renders the ornate Islamic circular rosette with the verse number
- * centered precisely INSIDE the circle.
+ * centered precisely INSIDE the circle regardless of selected calligraphic font metrics.
  */
 @Composable
 fun QuranAyatEndRosette(
@@ -37,7 +40,7 @@ fun QuranAyatEndRosette(
     size: Dp = 28.dp,
     rosetteColor: Color = DesertOchre,
     textColor: Color = DesertOchre,
-    fontFamily: FontFamily = QuranFontFamily,
+    @Suppress("UNUSED_PARAMETER") fontFamily: FontFamily = QuranFontFamily,
     useIndoPakDigits: Boolean = true
 ) {
     val digits = remember(ayahNumber, useIndoPakDigits) {
@@ -53,9 +56,9 @@ fun QuranAyatEndRosette(
 
     // Dynamic font size depending on digit count so 1, 2, or 3 digits fit inside the ring
     val numberFontSize = when {
-        ayahNumber < 10 -> (size.value * 0.46f).sp
-        ayahNumber < 100 -> (size.value * 0.40f).sp
-        else -> (size.value * 0.32f).sp
+        ayahNumber < 10 -> (size.value * 0.42f).sp
+        ayahNumber < 100 -> (size.value * 0.36f).sp
+        else -> (size.value * 0.30f).sp
     }
 
     Box(
@@ -95,14 +98,22 @@ fun QuranAyatEndRosette(
             )
         }
 
-        // Verse number precisely centered INSIDE the rosette circle
+        // Verse number precisely centered INSIDE the rosette circle using symmetrical system metrics
         Text(
             text = digits,
-            fontSize = numberFontSize,
-            fontWeight = FontWeight.Bold,
-            color = textColor,
-            fontFamily = fontFamily,
-            textAlign = TextAlign.Center
+            style = TextStyle(
+                fontSize = numberFontSize,
+                lineHeight = numberFontSize,
+                fontWeight = FontWeight.Bold,
+                color = textColor,
+                fontFamily = FontFamily.Default,
+                textAlign = TextAlign.Center,
+                platformStyle = PlatformTextStyle(includeFontPadding = false),
+                lineHeightStyle = LineHeightStyle(
+                    alignment = LineHeightStyle.Alignment.Center,
+                    trim = LineHeightStyle.Trim.Both
+                )
+            )
         )
     }
 }

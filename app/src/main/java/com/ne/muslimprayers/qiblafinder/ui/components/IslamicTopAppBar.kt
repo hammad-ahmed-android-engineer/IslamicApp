@@ -16,9 +16,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.WarmParchment
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 
 @Composable
 fun IslamicTopAppBar(
@@ -35,22 +35,22 @@ fun IslamicTopAppBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(horizontal = 14.sdp, vertical = 4.sdp),
+                .padding(horizontal = AppDimensions.paddingMedium, vertical = AppDimensions.paddingTiny),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (onBackClick != null) {
                 IconButton(
                     onClick = onBackClick,
-                    modifier = Modifier.size(34.sdp)
+                    modifier = Modifier.size(AppDimensions.buttonSmallHeight)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
                         tint = TextPrimary,
-                        modifier = Modifier.size(20.sdp)
+                        modifier = Modifier.size(AppDimensions.iconMedium)
                     )
                 }
-                Spacer(modifier = Modifier.width(4.sdp))
+                Spacer(modifier = Modifier.width(AppDimensions.paddingTiny))
             }
 
             AppText.TitleMedium(

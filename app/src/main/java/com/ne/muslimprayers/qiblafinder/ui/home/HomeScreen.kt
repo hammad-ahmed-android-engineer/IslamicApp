@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,13 +28,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ne.muslimprayers.qiblafinder.R
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.WarmParchment
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.domain.model.Hadith
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 import com.ne.muslimprayers.qiblafinder.ui.components.ErrorState
@@ -57,9 +63,22 @@ fun HomeScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     var selectedHadith by remember { mutableStateOf<Hadith?>(null) }
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.onScreenResumed()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -77,11 +96,20 @@ fun HomeScreen(
             onDismiss = { selectedHadith = null },
             onCopy = {
                 val text = "${selectedHadith!!.englishText}\n\n[${selectedHadith!!.source} • ${selectedHadith!!.chapter}]"
-                com.ne.muslimprayers.qiblafinder.core.utils.AppUtils.copyToClipboard(context, "Hadith", text, "Hadith copied to clipboard")
+                com.ne.muslimprayers.qiblafinder.core.utils.AppUtils.copyToClipboard(
+                    context,
+                    "Hadith",
+                    text,
+                    context.getString(R.string.hadith_copied)
+                )
             },
             onShare = {
                 val text = "${selectedHadith!!.englishText}\n\n— ${selectedHadith!!.source} (${selectedHadith!!.chapter})"
-                com.ne.muslimprayers.qiblafinder.core.utils.AppUtils.shareText(context, text, "Share Hadith via")
+                com.ne.muslimprayers.qiblafinder.core.utils.AppUtils.shareText(
+                    context,
+                    text,
+                    context.getString(R.string.share_hadith_via)
+                )
             }
         )
     }
@@ -92,13 +120,16 @@ fun HomeScreen(
                 .fillMaxSize()
                 .background(WarmParchment)
                 .statusBarsPadding()
-                .padding(horizontal = 16.sdp),
-            horizontalArrangement = Arrangement.spacedBy(16.sdp)
+                .padding(horizontal = AppDimensions.paddingMedium),
+            horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingMedium)
         ) {
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(top = 10.sdp, bottom = 32.sdp),
-                verticalArrangement = Arrangement.spacedBy(14.sdp)
+                contentPadding = PaddingValues(
+                    top = AppDimensions.paddingSmall,
+                    bottom = AppDimensions.paddingExtraLarge
+                ),
+                verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingMedium)
             ) {
                 item {
                     HomeScreenHeader(
@@ -131,32 +162,39 @@ fun HomeScreen(
 
                 item {
                     AppText.TitleMedium(
-                        text = "Today's Prayer Times",
+                        text = stringResource(R.string.home_todays_prayers),
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary,
-                        modifier = Modifier.padding(bottom = 6.sdp)
+                        modifier = Modifier.padding(bottom = AppDimensions.paddingSmall)
                     )
 
                     if (state.isLoading && state.schedule == null) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(100.sdp),
+                                .height(AppDimensions.prayerChipHeight),
                             contentAlignment = Alignment.Center
                         ) {
                             CircularProgressIndicator(color = MedinaSage)
                         }
                     } else if (state.errorMessage != null && state.schedule == null) {
-                        ErrorState(message = state.errorMessage ?: "Error", onRetry = { viewModel.refreshLocationAndSchedule() })
+                        ErrorState(
+                            message = state.errorMessage ?: "Error",
+                            onRetry = { viewModel.refreshLocationAndSchedule() }
+                        )
                     } else {
                         val salawat = state.schedule?.mainSalawat.orEmpty()
+                        val alarmsMap = state.alarms.associate { it.prayerType to (state.notificationsEnabled && it.isAlarmActive) }
                         LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(10.sdp),
+                            horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingSmall),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             items(salawat) { prayer ->
+                                val isAlarmOn = alarmsMap[prayer.type] ?: (state.notificationsEnabled && prayer.isAlarmActive)
                                 PrayerTimingChip(
                                     prayer = prayer,
+                                    isAlarmActive = isAlarmOn,
+                                    onToggleAlarm = { viewModel.togglePrayerAlarm(prayer) },
                                     onClick = onNavigateToPrayersTiming
                                 )
                             }
@@ -177,8 +215,11 @@ fun HomeScreen(
 
             LazyColumn(
                 modifier = Modifier.weight(1.1f),
-                contentPadding = PaddingValues(top = 10.sdp, bottom = 32.sdp),
-                verticalArrangement = Arrangement.spacedBy(14.sdp)
+                contentPadding = PaddingValues(
+                    top = AppDimensions.paddingSmall,
+                    bottom = AppDimensions.paddingExtraLarge
+                ),
+                verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingMedium)
             ) {
                 item {
                     QuickActionsSection(
@@ -212,9 +253,12 @@ fun HomeScreen(
                 .fillMaxSize()
                 .background(WarmParchment)
                 .statusBarsPadding()
-                .padding(horizontal = 16.sdp),
-            contentPadding = PaddingValues(top = 10.sdp, bottom = 32.sdp),
-            verticalArrangement = Arrangement.spacedBy(14.sdp)
+                .padding(horizontal = AppDimensions.paddingMedium),
+            contentPadding = PaddingValues(
+                top = AppDimensions.paddingSmall,
+                bottom = AppDimensions.paddingExtraLarge
+            ),
+            verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingMedium)
         ) {
             item {
                 HomeScreenHeader(
@@ -247,33 +291,40 @@ fun HomeScreen(
 
             item {
                 AppText.TitleMedium(
-                    text = "Today's Prayer Times",
+                    text = stringResource(R.string.home_todays_prayers),
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary
                 )
 
-                Spacer(modifier = Modifier.height(6.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingSmall))
 
                 if (state.isLoading && state.schedule == null) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(100.sdp),
+                            .height(AppDimensions.prayerChipHeight),
                         contentAlignment = Alignment.Center
                     ) {
                         CircularProgressIndicator(color = MedinaSage)
                     }
                 } else if (state.errorMessage != null && state.schedule == null) {
-                    ErrorState(message = state.errorMessage ?: "Error", onRetry = { viewModel.refreshLocationAndSchedule() })
+                    ErrorState(
+                        message = state.errorMessage ?: "Error",
+                        onRetry = { viewModel.refreshLocationAndSchedule() }
+                    )
                 } else {
                     val salawat = state.schedule?.mainSalawat.orEmpty()
+                    val alarmsMap = state.alarms.associate { it.prayerType to (state.notificationsEnabled && it.isAlarmActive) }
                     LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(10.sdp),
+                        horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingSmall),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         items(salawat) { prayer ->
+                            val isAlarmOn = alarmsMap[prayer.type] ?: (state.notificationsEnabled && prayer.isAlarmActive)
                             PrayerTimingChip(
                                 prayer = prayer,
+                                isAlarmActive = isAlarmOn,
+                                onToggleAlarm = { viewModel.togglePrayerAlarm(prayer) },
                                 onClick = onNavigateToPrayersTiming
                             )
                         }

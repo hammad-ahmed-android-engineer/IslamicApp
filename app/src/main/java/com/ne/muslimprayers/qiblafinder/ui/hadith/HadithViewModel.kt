@@ -17,6 +17,9 @@ import javax.inject.Inject
 
 data class HadithCollectionTab(
     val title: String,
+    val arabicTitle: String,
+    val compilerName: String,
+    val description: String,
     val edition: String,
     val maxSections: Int
 )
@@ -28,6 +31,7 @@ data class HadithUiState(
     val isLoading: Boolean = false,
     val searchQuery: String = "",
     val selectedCollectionIndex: Int = 0,
+    val isBookOpened: Boolean = false,
     val currentSection: Int = 1,
     val maxSections: Int = 97,
     val currentChapterName: String = "",
@@ -42,12 +46,54 @@ class HadithViewModel @Inject constructor(
 
     // The Six Canonical Hadith Books (Al-Kutub al-Sittah)
     val collections = listOf(
-        HadithCollectionTab("Sahih Bukhari", "eng-bukhari", 97),
-        HadithCollectionTab("Sahih Muslim", "eng-muslim", 56),
-        HadithCollectionTab("Abu Dawud", "eng-abudawud", 43),
-        HadithCollectionTab("Jami' at-Tirmidhi", "eng-tirmidhi", 49),
-        HadithCollectionTab("Sunan an-Nasa'i", "eng-nasai", 51),
-        HadithCollectionTab("Sunan Ibn Majah", "eng-ibnmajah", 37)
+        HadithCollectionTab(
+            title = "Sahih al-Bukhari",
+            arabicTitle = "صحيح البخاري",
+            compilerName = "Imam Muhammad ibn Ismail al-Bukhari",
+            description = "The most authentic collection of Prophetic traditions in Sunni Islam",
+            edition = "eng-bukhari",
+            maxSections = 97
+        ),
+        HadithCollectionTab(
+            title = "Sahih Muslim",
+            arabicTitle = "صحيح مسلم",
+            compilerName = "Imam Muslim ibn al-Hajjaj",
+            description = "Renowned authentic Hadith compilation arranged systematically by fiqh topics",
+            edition = "eng-muslim",
+            maxSections = 56
+        ),
+        HadithCollectionTab(
+            title = "Sunan Abu Dawud",
+            arabicTitle = "سنن أبي داود",
+            compilerName = "Imam Abu Dawud as-Sijistani",
+            description = "Comprehensive compilation of legal rulings, worship, and Prophetic Sunnah",
+            edition = "eng-abudawud",
+            maxSections = 43
+        ),
+        HadithCollectionTab(
+            title = "Jami' at-Tirmidhi",
+            arabicTitle = "جامع الترمذي",
+            compilerName = "Imam Abu Isa Muhammad at-Tirmidhi",
+            description = "Classical Hadith encyclopedia featuring juristic opinions and authenticity gradings",
+            edition = "eng-tirmidhi",
+            maxSections = 49
+        ),
+        HadithCollectionTab(
+            title = "Sunan an-Nasa'i",
+            arabicTitle = "سنن النسائي",
+            compilerName = "Imam Ahmad ibn Shu'ayb an-Nasa'i",
+            description = "Celebrated for strict narrator verification and detailed chapters on worship",
+            edition = "eng-nasai",
+            maxSections = 51
+        ),
+        HadithCollectionTab(
+            title = "Sunan Ibn Majah",
+            arabicTitle = "سنن ابن ماجه",
+            compilerName = "Imam Muhammad ibn Yazid Ibn Majah",
+            description = "Completes the six canonical Sunni Hadith books with unique legal traditions",
+            edition = "eng-ibnmajah",
+            maxSections = 37
+        )
     )
 
     private val _uiState = MutableStateFlow(
@@ -73,6 +119,8 @@ class HadithViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         selectedCollectionIndex = index,
+                        isBookOpened = true,
+                        searchQuery = "",
                         currentSection = 1,
                         maxSections = item.maxSections,
                         currentChapterName = "${item.title} • $chapterName"
@@ -80,6 +128,15 @@ class HadithViewModel @Inject constructor(
                 }
                 loadHadiths(item.edition, 1)
             }
+        }
+    }
+
+    fun closeBook() {
+        _uiState.update {
+            it.copy(
+                isBookOpened = false,
+                searchQuery = ""
+            )
         }
     }
 

@@ -1,11 +1,7 @@
 package com.ne.muslimprayers.qiblafinder.ui.home.components
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
-import android.content.Intent
-import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Favorite
@@ -30,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchreLight
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
@@ -136,13 +134,22 @@ fun DailyDuaCard(
             Spacer(modifier = Modifier.height(14.sdp))
 
             if (dua != null) {
-                AppText.HeadingMedium(
-                    text = dua.arabicText,
-                    color = MedinaSage,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.sdp))
+                        .background(MedinaSageLight.copy(alpha = 0.35f))
+                        .border(0.8.sdp, DesertOchre.copy(alpha = 0.3f), RoundedCornerShape(14.sdp))
+                        .padding(horizontal = 8.sdp, vertical = 6.sdp)
+                ) {
+                    AppText.ArabicText(
+                        text = dua.arabicText,
+                        color = MedinaSage,
+                        fontSize = 23.sp,
+                        textAlign = TextAlign.Start,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
                 Spacer(modifier = Modifier.height(10.sdp))
                 AppText.BodyMedium(
                     text = "\"${dua.translation}\"",

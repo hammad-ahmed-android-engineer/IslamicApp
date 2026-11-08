@@ -15,8 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.domain.model.TasbihState
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 
@@ -47,9 +46,9 @@ fun TasbihTabContent(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.sdp)
-                .padding(bottom = 8.sdp),
-            horizontalArrangement = Arrangement.spacedBy(16.sdp),
+                .padding(horizontal = AppDimensions.paddingMedium)
+                .padding(bottom = AppDimensions.paddingSmall),
+            horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingMedium),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(
@@ -70,8 +69,8 @@ fun TasbihTabContent(
             Column(
                 modifier = Modifier
                     .weight(1.2f)
-                    .padding(vertical = 8.sdp),
-                verticalArrangement = Arrangement.spacedBy(12.sdp)
+                    .padding(vertical = AppDimensions.paddingSmall),
+                verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingSmall)
             ) {
                 TasbihHeaderControls(
                     tasbih = tasbih,
@@ -99,8 +98,8 @@ fun TasbihTabContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.sdp)
-                .padding(bottom = 16.sdp),
+                .padding(horizontal = AppDimensions.paddingMedium)
+                .padding(bottom = AppDimensions.paddingMedium),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
@@ -121,7 +120,7 @@ fun TasbihTabContent(
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.sdp)
+                verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingSmall)
             ) {
                 AppText.HeadingMedium(
                     text = "Select Dhikr Phrase",
@@ -129,7 +128,7 @@ fun TasbihTabContent(
                 )
 
                 LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.sdp),
+                    horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingSmall),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     items(presetPhrases) { (eng, arb, tgt) ->

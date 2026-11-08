@@ -16,6 +16,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.NightsStay
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.WbTwilight
 import androidx.compose.material3.Icon
@@ -41,6 +43,8 @@ import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 @Composable
 fun PrayerTimingChip(
     prayer: SinglePrayer,
+    isAlarmActive: Boolean = prayer.isAlarmActive,
+    onToggleAlarm: (() -> Unit)? = null,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -64,7 +68,7 @@ fun PrayerTimingChip(
 
     Surface(
         modifier = modifier
-            .width(112.sdp)
+            .width(116.sdp)
             .clip(RoundedCornerShape(18.sdp))
             .clickableDebounced { onClick() }
             .border(
@@ -77,24 +81,60 @@ fun PrayerTimingChip(
         tonalElevation = if (prayer.isNext) 5.sdp else 1.sdp
     ) {
         Column(
-            modifier = Modifier.padding(vertical = 12.sdp, horizontal = 10.sdp),
+            modifier = Modifier.padding(vertical = 10.sdp, horizontal = 10.sdp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Icon + Next Indicator
-            Box(
-                modifier = Modifier
-                    .size(36.sdp)
-                    .clip(CircleShape)
-                    .background(if (prayer.isNext) DesertOchre.copy(alpha = 0.25f) else MedinaSageLight),
-                contentAlignment = Alignment.Center
+            // Top Row: Prayer Icon + Alarm Enable/Disable Toggle
+            Row(
+                modifier = Modifier.width(96.sdp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = if (prayer.isNext) DesertOchre else MedinaSage,
-                    modifier = Modifier.size(20.sdp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(32.sdp)
+                        .clip(CircleShape)
+                        .background(if (prayer.isNext) DesertOchre.copy(alpha = 0.25f) else MedinaSageLight),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = if (prayer.isNext) DesertOchre else MedinaSage,
+                        modifier = Modifier.size(18.sdp)
+                    )
+                }
+
+                if (prayer.type != PrayerType.SUNRISE && onToggleAlarm != null) {
+                    Box(
+                        modifier = Modifier
+                            .size(28.sdp)
+                            .clip(CircleShape)
+                            .background(
+                                when {
+                                    prayer.isNext && isAlarmActive -> DesertOchre.copy(alpha = 0.3f)
+                                    prayer.isNext -> PureAlabaster.copy(alpha = 0.15f)
+                                    isAlarmActive -> MedinaSageLight
+                                    else -> DividerColor.copy(alpha = 0.35f)
+                                }
+                            )
+                            .clickableDebounced { onToggleAlarm() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = if (isAlarmActive) Icons.Default.NotificationsActive else Icons.Default.NotificationsOff,
+                            contentDescription = if (isAlarmActive) "Disable ${prayer.type.displayName} Alarm" else "Enable ${prayer.type.displayName} Alarm",
+                            tint = when {
+                                prayer.isNext && isAlarmActive -> DesertOchreLight
+                                prayer.isNext -> PureAlabaster.copy(alpha = 0.7f)
+                                isAlarmActive -> MedinaSage
+                                else -> TextSecondary
+                            },
+                            modifier = Modifier.size(15.sdp)
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(6.sdp))

@@ -12,8 +12,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.ne.muslimprayers.qiblafinder.R
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.SuccessGreen
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.domain.model.QiblaState
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
@@ -35,10 +37,10 @@ fun ReadingsCard(
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 AppText.BodySmall(
-                    text = "Qibla Angle",
+                    text = stringResource(R.string.compass_qibla_bearing_label),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                AppText.HeadingLarge(
+                AppText.TitleMedium(
                     text = "%.1f°".format(Locale.US, state.qiblaBearing),
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -46,20 +48,30 @@ fun ReadingsCard(
 
             Box(
                 modifier = Modifier
-                    .width(1.sdp)
-                    .height(30.sdp)
+                    .width(AppDimensions.borderWidthThin)
+                    .height(AppDimensions.paddingExtraLarge)
                     .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
             )
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 AppText.BodySmall(
-                    text = "Heading",
+                    text = stringResource(R.string.compass_device_heading_label),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                AppText.HeadingLarge(
+                AppText.TitleMedium(
                     text = "${state.compassAzimuth.roundToInt()}°",
                     color = if (isFacingQibla) SuccessGreen else MaterialTheme.colorScheme.onSurface
                 )
+            }
+
+            if (state.distanceToKaabaKm > 0.0) {
+                Box(
+                    modifier = Modifier
+                        .width(AppDimensions.borderWidthThin)
+                        .height(AppDimensions.paddingExtraLarge)
+                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                )
+
             }
         }
     }

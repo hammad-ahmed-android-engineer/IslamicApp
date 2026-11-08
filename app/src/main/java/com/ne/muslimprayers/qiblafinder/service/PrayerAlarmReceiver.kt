@@ -11,6 +11,9 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.ne.muslimprayers.qiblafinder.R
+import com.ne.muslimprayers.qiblafinder.core.common.PrayerNotificationMode
+import com.ne.muslimprayers.qiblafinder.domain.model.PrayerAlarmItem
+import com.ne.muslimprayers.qiblafinder.domain.model.PrayerType
 import com.ne.muslimprayers.qiblafinder.ui.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -23,22 +26,81 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         const val EXTRA_ALARM_ID = "extra_alarm_id"
         const val EXTRA_PRAYER_NAME = "extra_prayer_name"
         const val EXTRA_PRAYER_TIME = "extra_prayer_time"
+        const val ACTION_STOP_ADHAN = "com.ne.muslimprayers.qiblafinder.ACTION_STOP_ADHAN"
+
+        private var activeMediaPlayer: MediaPlayer? = null
+
+        fun stopActiveAdhan() {
+            try {
+                activeMediaPlayer?.let { mp ->
+                    if (mp.isPlaying) {
+                        mp.stop()
+                    }
+                    mp.release()
+                }
+            } catch (_: Exception) {
+            } finally {
+                activeMediaPlayer = null
+            }
+        }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == ACTION_STOP_ADHAN) {
+            stopActiveAdhan()
+            val notifId = intent.getIntExtra(EXTRA_ALARM_ID, -1)
+            if (notifId >= 0) {
+                val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                nm.cancel(notifId)
+            }
+            return
+        }
+
         val alarmId = intent.getIntExtra(EXTRA_ALARM_ID, 0)
         val prayerName = intent.getStringExtra(EXTRA_PRAYER_NAME) ?: "Prayer"
         val prayerTime = intent.getStringExtra(EXTRA_PRAYER_TIME) ?: ""
 
-        showPrayerNotification(context, alarmId, prayerName, prayerTime)
-        playAdhan(context, prayerName)
+        val prefs = context.getSharedPreferences("prayer_settings_prefs", Context.MODE_PRIVATE)
+        val masterEnabled = prefs.getBoolean("notifications_enabled", true)
+        val prayerKey = prayerName.uppercase()
+        val isSpecificEnabled = prefs.getBoolean("alarm_enabled_$prayerKey", true)
+
+        if (!masterEnabled || !isSpecificEnabled) {
+            return
+        }
+
+        val modeKey = prefs.getString("notif_mode_$prayerKey", PrayerNotificationMode.ADHAN.key)
+        val mode = PrayerNotificationMode.fromKey(modeKey)
+
+        showPrayerNotification(context, alarmId, prayerName, prayerTime, mode)
+        if (mode == PrayerNotificationMode.ADHAN) {
+            playAdhan(context, prayerName)
+        }
+
+        // Automatically reschedule for tomorrow at the same prayer time
+        if (prayerTime.isNotBlank()) {
+            val type = try {
+                PrayerType.valueOf(prayerKey)
+            } catch (_: Exception) {
+                PrayerType.FAJR
+            }
+            AlarmScheduler(context).scheduleAlarm(
+                PrayerAlarmItem(
+                    id = alarmId,
+                    prayerType = type,
+                    prayerTime = prayerTime,
+                    isAlarmActive = true
+                )
+            )
+        }
     }
 
     private fun showPrayerNotification(
         context: Context,
         notificationId: Int,
         prayerName: String,
-        prayerTime: String
+        prayerTime: String,
+        mode: PrayerNotificationMode
     ) {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -67,7 +129,18 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val stopIntent = Intent(context, PrayerAlarmReceiver::class.java).apply {
+            action = ACTION_STOP_ADHAN
+            putExtra(EXTRA_ALARM_ID, notificationId)
+        }
+        val stopPendingIntent = PendingIntent.getBroadcast(
+            context,
+            notificationId + 100,
+            stopIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.mipmap.icon)
             .setContentTitle("Time for $prayerName Prayer ($prayerTime)")
             .setContentText("Hayya 'ala-s-Salah - Come to prayer! It is time for $prayerName.")
@@ -76,21 +149,36 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .setColor(ContextCompat.getColor(context, R.color.white))
-            .build()
 
-        notificationManager.notify(notificationId, notification)
+        if (mode == PrayerNotificationMode.SILENT) {
+            builder.setSilent(true)
+        } else if (mode == PrayerNotificationMode.ADHAN) {
+            builder.setSilent(true) // Adhan audio is played directly via MediaPlayer
+            builder.addAction(
+                android.R.drawable.ic_media_pause,
+                "Stop Adhan",
+                stopPendingIntent
+            )
+        }
+
+        notificationManager.notify(notificationId, builder.build())
     }
 
     private fun playAdhan(context: Context, prayerName: String) {
         try {
+            stopActiveAdhan()
             val audioRes = if (prayerName.equals("Fajr", ignoreCase = true)) {
                 R.raw.adzan_fajr
             } else {
                 R.raw.adzan_makkah
             }
             val mediaPlayer = MediaPlayer.create(context, audioRes)
+            activeMediaPlayer = mediaPlayer
             mediaPlayer?.setOnCompletionListener { mp ->
                 mp.release()
+                if (activeMediaPlayer === mp) {
+                    activeMediaPlayer = null
+                }
             }
             mediaPlayer?.start()
         } catch (e: Exception) {

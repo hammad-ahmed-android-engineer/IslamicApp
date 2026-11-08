@@ -14,10 +14,12 @@ data class Ayah(
     val arabicText: String,
     val englishText: String,
     val urduText: String = "",
+    val transliteration: String = "",
     val juz: Int = 1,
     val audioUrl: String = "",
     val indopakText: String = "",
-    val globalAyahNumber: Int = 0
+    val globalAyahNumber: Int = 0,
+    val surahNumber: Int = 1
 )
 
 data class Hadith(

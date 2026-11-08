@@ -2,28 +2,29 @@ package com.ne.muslimprayers.qiblafinder.ui.quran
 
 import android.content.Context
 import android.media.MediaPlayer
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ne.muslimprayers.qiblafinder.core.common.Resource
+import com.ne.muslimprayers.qiblafinder.core.theme.ArabicFontManager
 import com.ne.muslimprayers.qiblafinder.core.utils.StringUtils
 import com.ne.muslimprayers.qiblafinder.domain.model.Ayah
 import com.ne.muslimprayers.qiblafinder.domain.model.Surah
 import com.ne.muslimprayers.qiblafinder.domain.usecase.quran.GetJuzVersesUseCase
 import com.ne.muslimprayers.qiblafinder.domain.usecase.quran.GetQuranSurahsUseCase
 import com.ne.muslimprayers.qiblafinder.domain.usecase.quran.GetSurahVersesUseCase
+import com.ne.muslimprayers.qiblafinder.ui.quran.util.QuranAudioDownloadManager
+import com.ne.muslimprayers.qiblafinder.ui.quran.util.QuranDownloadStatus
+import com.ne.muslimprayers.qiblafinder.ui.quran.util.QuranStaticData
+import com.ne.muslimprayers.qiblafinder.ui.quran.util.QuranSurahUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import android.widget.Toast
-import com.ne.muslimprayers.qiblafinder.ui.quran.util.QuranAudioDownloadManager
-import com.ne.muslimprayers.qiblafinder.ui.quran.util.QuranDownloadStatus
-import com.ne.muslimprayers.qiblafinder.ui.quran.util.QuranStaticData
-import com.ne.muslimprayers.qiblafinder.ui.quran.util.QuranSurahUtils
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import javax.inject.Inject
@@ -70,6 +71,7 @@ data class QuranUiState(
     val versesError: String? = null,
     val currentlyPlayingAyah: Int? = null,
     val arabicFontSize: Float = 26f,
+    val translationFontSize: Float = 15f,
     val showTranslation: Boolean = true,
     val showTransliteration: Boolean = false,
     val autoPlayNext: Boolean = true,
@@ -77,12 +79,18 @@ data class QuranUiState(
     val showSettingsSheet: Boolean = false,
     val isFullScreenMode: Boolean = false,
     val isAutoScrollEnabled: Boolean = true,
-    val useIndoPakScript: Boolean = true,
-    val selectedQuranFont: String = "indopak", // "indopak", "uthmani", "pdms"
+    val useIndoPakScript: Boolean = false,
+    val selectedQuranFont: String = "muhammadi",
     val showUrduTranslation: Boolean = true,
     val isColoredTajweedQuran: Boolean = true,
     val isCurrentSurahDownloaded: Boolean = false,
-    val downloadStatus: QuranDownloadStatus = QuranDownloadStatus()
+    val downloadedSurahNumbers: Set<Int> = emptySet(),
+    val downloadedJuzNumbers: Set<Int> = emptySet(),
+    val downloadStatus: QuranDownloadStatus = QuranDownloadStatus(),
+    val showReciterDownloadDialog: Boolean = false,
+    val pendingDownloadSurah: Surah? = null,
+    val pendingDownloadJuz: JuzInfo? = null,
+    val pendingDownloadTitle: String = ""
 )
 
 @HiltViewModel
@@ -97,6 +105,16 @@ class QuranViewModel @Inject constructor(
 
     private val prefs = context.getSharedPreferences("quran_prefs", Context.MODE_PRIVATE)
 
+    init {
+        ArabicFontManager.init(context)
+    }
+
+    private val initialFontKey = ArabicFontManager.currentFontKey.value
+    private val initialFontConfig = ArabicFontManager.getTypographyConfig(initialFontKey)
+    private val initialReciter = (prefs.getString("selected_reciter", "ar.alafasy") ?: "ar.alafasy").let {
+        if (it == "ar.warsh") "ar.husary" else it
+    }
+
     private val _uiState = MutableStateFlow(
         QuranUiState(
             surahs = QuranStaticData.ALL_SURAHS,
@@ -104,7 +122,11 @@ class QuranViewModel @Inject constructor(
             juzList = createJuzList(),
             favoriteSurahNumbers = loadFavorites(),
             bookmarks = loadBookmarks(),
-            selectedReciter = prefs.getString("selected_reciter", "ar.alafasy") ?: "ar.alafasy",
+            arabicFontSize = prefs.getFloat("arabic_font_size", 26f).coerceIn(18f, 44f),
+            translationFontSize = prefs.getFloat("translation_font_size", 15f).coerceIn(12f, 26f),
+            selectedReciter = initialReciter,
+            selectedQuranFont = initialFontKey,
+            useIndoPakScript = initialFontConfig.prefersIndoPakScript,
             isColoredTajweedQuran = prefs.getBoolean("is_colored_quran", true)
         )
     )
@@ -115,22 +137,81 @@ class QuranViewModel @Inject constructor(
     init {
         loadSurahs()
         observeDownloadStatus()
+        observeFontChanges()
+        refreshDownloadedSets()
+    }
+
+    private fun observeFontChanges() {
+        viewModelScope.launch {
+            ArabicFontManager.currentFontKey.collect { key ->
+                val config = ArabicFontManager.getTypographyConfig(key)
+                _uiState.update {
+                    it.copy(
+                        selectedQuranFont = key,
+                        useIndoPakScript = config.prefersIndoPakScript
+                    )
+                }
+            }
+        }
     }
 
     private fun observeDownloadStatus() {
         viewModelScope.launch {
             QuranAudioDownloadManager.downloadStatus.collect { status ->
                 _uiState.update { state ->
-                    val isDownloaded = state.selectedSurah?.let { surah ->
-                        QuranAudioDownloadManager.isSurahDownloaded(
-                            context,
-                            state.selectedReciter,
-                            surah.number,
-                            surah.totalVerses
-                        )
-                    } ?: false
+                    val isDownloaded = computeCurrentSelectionDownloaded(state)
                     state.copy(downloadStatus = status, isCurrentSurahDownloaded = isDownloaded)
                 }
+                if (!status.isDownloading) {
+                    refreshDownloadedSets()
+                }
+            }
+        }
+    }
+
+    private fun computeCurrentSelectionDownloaded(state: QuranUiState): Boolean {
+        val currentJuz = state.selectedJuz
+        if (currentJuz != null) {
+            return QuranAudioDownloadManager.isJuzDownloaded(context, state.selectedReciter, currentJuz.number)
+        }
+        val surah = state.selectedSurah ?: return false
+        return QuranAudioDownloadManager.isSurahDownloaded(
+            context,
+            state.selectedReciter,
+            surah.number,
+            surah.totalVerses
+        )
+    }
+
+    fun refreshDownloadedSets() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val reciterId = _uiState.value.selectedReciter
+            val surahs = _uiState.value.surahs
+            val juzs = _uiState.value.juzList
+
+            val downloadedSurahs = surahs
+                .filter { QuranAudioDownloadManager.isSurahDownloaded(context, reciterId, it.number, it.totalVerses) }
+                .map { it.number }
+                .toSet()
+
+            val downloadedJuzs = juzs
+                .filter { QuranAudioDownloadManager.isJuzDownloaded(context, reciterId, it.number) }
+                .map { it.number }
+                .toSet()
+
+            _uiState.update { state ->
+                val isCurrentDone = if (state.selectedJuz != null) {
+                    downloadedJuzs.contains(state.selectedJuz.number)
+                } else if (state.selectedSurah != null) {
+                    downloadedSurahs.contains(state.selectedSurah.number)
+                } else {
+                    false
+                }
+                state.copy(
+                    downloadedSurahNumbers = downloadedSurahs,
+                    downloadedJuzNumbers = downloadedJuzs,
+                    isCurrentSurahDownloaded = isCurrentDone
+                )
             }
         }
     }
@@ -188,18 +269,21 @@ class QuranViewModel @Inject constructor(
         _uiState.update { it.copy(favoriteSurahNumbers = currentFavs) }
     }
 
-    fun toggleBookmarkAyah(surah: Surah, ayah: Ayah) {
+    fun toggleBookmarkAyah(fallbackSurah: Surah, ayah: Ayah) {
+        val effectiveSurahNum = if (ayah.surahNumber > 0) ayah.surahNumber else fallbackSurah.number
+        val effectiveSurahName = _uiState.value.surahs.find { it.number == effectiveSurahNum }?.name ?: fallbackSurah.name
+
         val currentBookmarks = _uiState.value.bookmarks.toMutableList()
         val existingIndex = currentBookmarks.indexOfFirst {
-            it.surahNumber == surah.number && it.ayahNumber == ayah.numberInSurah
+            it.surahNumber == effectiveSurahNum && it.ayahNumber == ayah.numberInSurah
         }
         if (existingIndex != -1) {
             currentBookmarks.removeAt(existingIndex)
         } else {
             currentBookmarks.add(
                 BookmarkItem(
-                    surahNumber = surah.number,
-                    surahName = surah.name,
+                    surahNumber = effectiveSurahNum,
+                    surahName = effectiveSurahName,
                     ayahNumber = ayah.numberInSurah,
                     arabicSnippet = ayah.arabicText.take(45),
                     englishSnippet = ayah.englishText.take(55)
@@ -238,20 +322,19 @@ class QuranViewModel @Inject constructor(
     }
 
     fun toggleIndoPakScript() {
-        _uiState.update {
-            val nextState = !it.useIndoPakScript
-            it.copy(
-                useIndoPakScript = nextState,
-                selectedQuranFont = if (nextState) "indopak" else "uthmani"
-            )
-        }
+        val nextState = !_uiState.value.useIndoPakScript
+        val targetFont = if (nextState) "pdms_saleem" else "hafs"
+        setQuranFont(targetFont)
     }
 
     fun setQuranFont(fontKey: String) {
+        val normalized = ArabicFontManager.normalizeKey(fontKey)
+        ArabicFontManager.setFont(context, normalized)
+        val config = ArabicFontManager.getTypographyConfig(normalized)
         _uiState.update {
             it.copy(
-                selectedQuranFont = fontKey,
-                useIndoPakScript = (fontKey == "indopak" || fontKey == "pdms")
+                selectedQuranFont = normalized,
+                useIndoPakScript = config.prefersIndoPakScript
             )
         }
     }
@@ -267,6 +350,7 @@ class QuranViewModel @Inject constructor(
     fun setReciter(reciterId: String) {
         prefs.edit().putString("selected_reciter", reciterId).apply()
         _uiState.update { it.copy(selectedReciter = reciterId) }
+        refreshDownloadedSets()
     }
 
     fun loadSurahs() {
@@ -274,7 +358,6 @@ class QuranViewModel @Inject constructor(
             getQuranSurahsUseCase().collect { result ->
                 when (result) {
                     is Resource.Loading -> {
-                        // Do not clear existing 114 surahs during loading
                         _uiState.update { it.copy(isLoadingSurahs = false, surahsError = null) }
                     }
                     is Resource.Success -> {
@@ -287,6 +370,7 @@ class QuranViewModel @Inject constructor(
                                 surahsError = null
                             )
                         }
+                        refreshDownloadedSets()
                     }
                     is Resource.Error -> {
                         _uiState.update { state ->
@@ -319,9 +403,9 @@ class QuranViewModel @Inject constructor(
         val cleanArabicQuery = StringUtils.removeArabicDiacritics(cleanQuery)
         return surahs.filter { surah ->
             surah.name.contains(cleanQuery, ignoreCase = true) ||
-                surah.englishMeaning.contains(cleanQuery, ignoreCase = true) ||
-                surah.number.toString().contains(cleanQuery) ||
-                StringUtils.removeArabicDiacritics(surah.arabicName).contains(cleanArabicQuery, ignoreCase = true)
+                    surah.englishMeaning.contains(cleanQuery, ignoreCase = true) ||
+                    surah.number.toString().contains(cleanQuery) ||
+                    StringUtils.removeArabicDiacritics(surah.arabicName).contains(cleanArabicQuery, ignoreCase = true)
         }
     }
 
@@ -331,12 +415,17 @@ class QuranViewModel @Inject constructor(
     fun selectJuz(juz: JuzInfo) {
         val startingSurah = _uiState.value.surahs.find { it.number == juz.startingSurahNumber }
         val juzTitleSurah = Surah(
-            number = juz.number,
+            number = juz.startingSurahNumber,
             name = "Juz ${juz.number} (${juz.englishName})",
             arabicName = juz.arabicName,
             englishMeaning = "Starts at Surah ${startingSurah?.name ?: juz.startingSurahName}",
             totalVerses = 0,
             revelationType = "Juz ${juz.number}"
+        )
+        val isDownloaded = QuranAudioDownloadManager.isJuzDownloaded(
+            context,
+            _uiState.value.selectedReciter,
+            juz.number
         )
         _uiState.update {
             it.copy(
@@ -345,7 +434,7 @@ class QuranViewModel @Inject constructor(
                 isLoadingVerses = true,
                 versesError = null,
                 verses = emptyList(),
-                isCurrentSurahDownloaded = false
+                isCurrentSurahDownloaded = isDownloaded
             )
         }
         loadJuzVerses(juz.number)
@@ -360,13 +449,19 @@ class QuranViewModel @Inject constructor(
                     }
                     is Resource.Success -> {
                         val list = result.data.orEmpty()
+                        val isDownloaded = QuranAudioDownloadManager.isJuzDownloaded(
+                            context,
+                            _uiState.value.selectedReciter,
+                            juzNumber
+                        )
                         _uiState.update { state ->
                             val updatedSurah = state.selectedSurah?.copy(totalVerses = list.size)
                             state.copy(
                                 isLoadingVerses = false,
                                 verses = list,
                                 selectedSurah = updatedSurah,
-                                versesError = null
+                                versesError = null,
+                                isCurrentSurahDownloaded = isDownloaded
                             )
                         }
                     }
@@ -425,6 +520,7 @@ class QuranViewModel @Inject constructor(
                 isCurrentSurahDownloaded = false
             )
         }
+        refreshDownloadedSets()
     }
 
     private fun loadVerses(surahNumber: Int) {
@@ -471,50 +567,130 @@ class QuranViewModel @Inject constructor(
         _uiState.update { it.copy(isColoredTajweedQuran = isColored) }
     }
 
-    fun downloadCurrentSurah() {
-        val surah = _uiState.value.selectedSurah ?: return
-        val verses = _uiState.value.verses
-        if (verses.isEmpty()) return
-        viewModelScope.launch {
-            withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Downloading Surah ${surah.name} audio for offline listening...", Toast.LENGTH_SHORT).show()
-            }
-            val success = QuranAudioDownloadManager.downloadSurahAudio(
-                context = context,
-                okHttpClient = okHttpClient,
-                surah = surah,
-                verses = verses,
-                reciterId = _uiState.value.selectedReciter
-            )
-            checkCurrentSurahDownloaded()
-            withContext(Dispatchers.Main) {
-                if (success) {
-                    Toast.makeText(context, "Surah ${surah.name} downloaded successfully! Available offline.", Toast.LENGTH_LONG).show()
-                } else if (!QuranAudioDownloadManager.downloadStatus.value.isDownloading) {
-                    Toast.makeText(context, "Audio download completed or interrupted.", Toast.LENGTH_SHORT).show()
-                }
-            }
+    /**
+     * Prompts the user with a Qari voice selection dialog before downloading the currently open Surah or Juz.
+     */
+    fun requestDownloadCurrent() {
+        val currentJuz = _uiState.value.selectedJuz
+        val currentSurah = _uiState.value.selectedSurah
+        if (currentJuz != null) {
+            requestDownloadJuz(currentJuz)
+        } else if (currentSurah != null) {
+            requestDownloadSurah(currentSurah)
         }
     }
 
-    fun downloadSurah(surah: Surah) {
+    /**
+     * Prompts the user with a Qari voice selection dialog before downloading a Surah.
+     */
+    fun requestDownloadSurah(surah: Surah) {
+        _uiState.update {
+            it.copy(
+                showReciterDownloadDialog = true,
+                pendingDownloadSurah = surah,
+                pendingDownloadJuz = null,
+                pendingDownloadTitle = "Surah ${surah.name}"
+            )
+        }
+    }
+
+    /**
+     * Prompts the user with a Qari voice selection dialog before downloading a Juz / Para.
+     */
+    fun requestDownloadJuz(juz: JuzInfo) {
+        _uiState.update {
+            it.copy(
+                showReciterDownloadDialog = true,
+                pendingDownloadSurah = null,
+                pendingDownloadJuz = juz,
+                pendingDownloadTitle = "Para / Juz ${juz.number} (${juz.englishName})"
+            )
+        }
+    }
+
+    fun dismissReciterDownloadDialog() {
+        _uiState.update {
+            it.copy(
+                showReciterDownloadDialog = false,
+                pendingDownloadSurah = null,
+                pendingDownloadJuz = null,
+                pendingDownloadTitle = ""
+            )
+        }
+    }
+
+    fun confirmDownloadWithReciter(reciterId: String) {
+        val targetSurah = _uiState.value.pendingDownloadSurah
+        val targetJuz = _uiState.value.pendingDownloadJuz
+
+        setReciter(reciterId)
+        dismissReciterDownloadDialog()
+
+        if (targetJuz != null) {
+            startJuzDownload(targetJuz, reciterId)
+        } else if (targetSurah != null) {
+            startSurahDownload(targetSurah, reciterId)
+        }
+    }
+
+    private fun startSurahDownload(surah: Surah, reciterId: String) {
         viewModelScope.launch {
+            val reciterName = AVAILABLE_RECITERS.find { it.id == reciterId }?.name ?: reciterId
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Preparing Surah ${surah.name} audio download...", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    "Downloading Surah ${surah.name} ($reciterName)...",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
-            getSurahVersesUseCase(surah.number).collect { res ->
-                if (res is Resource.Success && !res.data.isNullOrEmpty()) {
-                    val success = QuranAudioDownloadManager.downloadSurahAudio(
-                        context = context,
-                        okHttpClient = okHttpClient,
-                        surah = surah,
-                        verses = res.data,
-                        reciterId = _uiState.value.selectedReciter
-                    )
-                    checkCurrentSurahDownloaded()
-                    withContext(Dispatchers.Main) {
-                        if (success) {
-                            Toast.makeText(context, "Surah ${surah.name} audio downloaded for offline use!", Toast.LENGTH_SHORT).show()
+
+            // If this Surah is already open and loaded, use its verses directly
+            val existingVerses = if (_uiState.value.selectedJuz == null &&
+                _uiState.value.selectedSurah?.number == surah.number &&
+                _uiState.value.verses.isNotEmpty()
+            ) {
+                _uiState.value.verses
+            } else {
+                null
+            }
+
+            if (existingVerses != null) {
+                val success = QuranAudioDownloadManager.downloadSurahAudio(
+                    context = context,
+                    okHttpClient = okHttpClient,
+                    surah = surah,
+                    verses = existingVerses,
+                    reciterId = reciterId
+                )
+                refreshDownloadedSets()
+                withContext(Dispatchers.Main) {
+                    if (success) {
+                        Toast.makeText(
+                            context,
+                            "Surah ${surah.name} downloaded in $reciterName's voice!",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            } else {
+                getSurahVersesUseCase(surah.number).collect { res ->
+                    if (res is Resource.Success && !res.data.isNullOrEmpty()) {
+                        val success = QuranAudioDownloadManager.downloadSurahAudio(
+                            context = context,
+                            okHttpClient = okHttpClient,
+                            surah = surah,
+                            verses = res.data,
+                            reciterId = reciterId
+                        )
+                        refreshDownloadedSets()
+                        withContext(Dispatchers.Main) {
+                            if (success) {
+                                Toast.makeText(
+                                    context,
+                                    "Surah ${surah.name} downloaded in $reciterName's voice!",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
                         }
                     }
                 }
@@ -522,11 +698,52 @@ class QuranViewModel @Inject constructor(
         }
     }
 
-    fun downloadJuz(juz: JuzInfo) {
+    private fun startJuzDownload(juz: JuzInfo, reciterId: String) {
         viewModelScope.launch {
-            val surah = _uiState.value.surahs.find { it.number == juz.startingSurahNumber } ?: return@launch
-            downloadSurah(surah)
+            val reciterName = AVAILABLE_RECITERS.find { it.id == reciterId }?.name ?: reciterId
+            withContext(Dispatchers.Main) {
+                Toast.makeText(
+                    context,
+                    "Downloading Juz ${juz.number} ($reciterName)...",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+
+            getJuzVersesUseCase(juz.number).collect { res ->
+                if (res is Resource.Success && !res.data.isNullOrEmpty()) {
+                    val success = QuranAudioDownloadManager.downloadJuzAudio(
+                        context = context,
+                        okHttpClient = okHttpClient,
+                        juzNumber = juz.number,
+                        juzTitle = juz.englishName,
+                        verses = res.data,
+                        reciterId = reciterId
+                    )
+                    refreshDownloadedSets()
+                    withContext(Dispatchers.Main) {
+                        if (success) {
+                            Toast.makeText(
+                                context,
+                                "Juz ${juz.number} (${juz.englishName}) downloaded in $reciterName's voice!",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    fun downloadCurrentSurah() {
+        requestDownloadCurrent()
+    }
+
+    fun downloadSurah(surah: Surah) {
+        requestDownloadSurah(surah)
+    }
+
+    fun downloadJuz(juz: JuzInfo) {
+        requestDownloadJuz(juz)
     }
 
     fun cancelAudioDownload() {
@@ -536,45 +753,53 @@ class QuranViewModel @Inject constructor(
 
     fun deleteSurahAudio(surahNumber: Int) {
         QuranAudioDownloadManager.deleteSurahAudio(context, _uiState.value.selectedReciter, surahNumber)
-        checkCurrentSurahDownloaded()
+        refreshDownloadedSets()
         Toast.makeText(context, "Downloaded audio removed", Toast.LENGTH_SHORT).show()
     }
 
     fun checkCurrentSurahDownloaded() {
-        val surah = _uiState.value.selectedSurah ?: return
-        val isDownloaded = QuranAudioDownloadManager.isSurahDownloaded(
-            context,
-            _uiState.value.selectedReciter,
-            surah.number,
-            surah.totalVerses
-        )
-        _uiState.update { it.copy(isCurrentSurahDownloaded = isDownloaded) }
+        refreshDownloadedSets()
+    }
+
+    fun refreshDownloadedStates() {
+        refreshDownloadedSets()
     }
 
     fun isSurahDownloaded(surah: Surah): Boolean {
-        return QuranAudioDownloadManager.isSurahDownloaded(
-            context,
-            _uiState.value.selectedReciter,
-            surah.number,
-            surah.totalVerses
-        )
+        return _uiState.value.downloadedSurahNumbers.contains(surah.number) ||
+                QuranAudioDownloadManager.isSurahDownloaded(
+                    context,
+                    _uiState.value.selectedReciter,
+                    surah.number,
+                    surah.totalVerses
+                )
+    }
+
+    fun isJuzDownloaded(juz: JuzInfo): Boolean {
+        return _uiState.value.downloadedJuzNumbers.contains(juz.number) ||
+                QuranAudioDownloadManager.isJuzDownloaded(
+                    context,
+                    _uiState.value.selectedReciter,
+                    juz.number
+                )
     }
 
     private fun getReciterAudioUrl(ayah: Ayah, reciterId: String): String {
-        val surahNum = _uiState.value.selectedSurah?.number ?: 1
+        val surahNum = if (ayah.surahNumber > 0) ayah.surahNumber else (_uiState.value.selectedSurah?.number ?: 1)
         return QuranSurahUtils.getAudioUrl(reciterId, surahNum, ayah.numberInSurah)
     }
 
     fun playAyahAudio(ayah: Ayah) {
         try {
-            if (_uiState.value.currentlyPlayingAyah == ayah.numberInSurah) {
+            val playId = if (ayah.globalAyahNumber > 0) ayah.globalAyahNumber else ayah.numberInSurah
+            if (_uiState.value.currentlyPlayingAyah == playId) {
                 stopAudio()
                 return
             }
 
             mediaPlayer?.release()
             val reciterId = _uiState.value.selectedReciter
-            val surahNum = _uiState.value.selectedSurah?.number ?: 1
+            val surahNum = if (ayah.surahNumber > 0) ayah.surahNumber else (_uiState.value.selectedSurah?.number ?: 1)
             val localFile = QuranAudioDownloadManager.getLocalAyahFile(context, reciterId, surahNum, ayah.numberInSurah)
 
             mediaPlayer = MediaPlayer().apply {
@@ -586,13 +811,15 @@ class QuranViewModel @Inject constructor(
                 }
                 setOnPreparedListener {
                     start()
-                    _uiState.update { it.copy(currentlyPlayingAyah = ayah.numberInSurah) }
+                    _uiState.update { it.copy(currentlyPlayingAyah = playId) }
                 }
                 setOnCompletionListener {
                     _uiState.update { it.copy(currentlyPlayingAyah = null) }
                     if (_uiState.value.autoPlayNext) {
                         val currentList = _uiState.value.verses
-                        val currentIndex = currentList.indexOfFirst { it.numberInSurah == ayah.numberInSurah }
+                        val currentIndex = currentList.indexOfFirst {
+                            (if (it.globalAyahNumber > 0) it.globalAyahNumber else it.numberInSurah) == playId
+                        }
                         if (currentIndex != -1 && currentIndex + 1 < currentList.size) {
                             playAyahAudio(currentList[currentIndex + 1])
                         }
@@ -602,7 +829,7 @@ class QuranViewModel @Inject constructor(
                     if (_uiState.value.selectedReciter != "ar.alafasy") {
                         try {
                             mediaPlayer?.reset()
-                            mediaPlayer?.setDataSource(ayah.audioUrl)
+                            mediaPlayer?.setDataSource(QuranSurahUtils.getAudioUrl("ar.alafasy", surahNum, ayah.numberInSurah))
                             mediaPlayer?.prepareAsync()
                         } catch (ex: Exception) {
                             _uiState.update { it.copy(currentlyPlayingAyah = null) }
@@ -630,11 +857,20 @@ class QuranViewModel @Inject constructor(
         _uiState.update { it.copy(currentlyPlayingAyah = null) }
     }
 
+    fun setArabicFontSize(size: Float) {
+        val clamped = size.coerceIn(18f, 44f)
+        prefs.edit().putFloat("arabic_font_size", clamped).apply()
+        _uiState.update { it.copy(arabicFontSize = clamped) }
+    }
+
+    fun setTranslationFontSize(size: Float) {
+        val clamped = size.coerceIn(12f, 26f)
+        prefs.edit().putFloat("translation_font_size", clamped).apply()
+        _uiState.update { it.copy(translationFontSize = clamped) }
+    }
+
     fun adjustFontSize(delta: Float) {
-        _uiState.update {
-            val newSize = (it.arabicFontSize + delta).coerceIn(20f, 44f)
-            it.copy(arabicFontSize = newSize)
-        }
+        setArabicFontSize(_uiState.value.arabicFontSize + delta)
     }
 
     override fun onCleared() {

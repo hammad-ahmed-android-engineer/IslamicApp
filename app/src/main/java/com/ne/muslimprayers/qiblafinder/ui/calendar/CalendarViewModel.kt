@@ -3,6 +3,7 @@ package com.ne.muslimprayers.qiblafinder.ui.calendar
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ne.muslimprayers.qiblafinder.core.common.LocationHelper
+import com.ne.muslimprayers.qiblafinder.core.common.PrayerSettingsManager
 import com.ne.muslimprayers.qiblafinder.core.common.Resource
 import com.ne.muslimprayers.qiblafinder.domain.model.IslamicCalendarInfo
 import com.ne.muslimprayers.qiblafinder.domain.usecase.GetIslamicCalendarUseCase
@@ -10,6 +11,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -27,7 +31,8 @@ data class CalendarUiState(
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
     private val getIslamicCalendarUseCase: GetIslamicCalendarUseCase,
-    private val locationHelper: LocationHelper
+    private val locationHelper: LocationHelper,
+    private val prayerSettingsManager: PrayerSettingsManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CalendarUiState())
@@ -38,6 +43,18 @@ class CalendarViewModel @Inject constructor(
             year = _uiState.value.selectedYear,
             month = _uiState.value.selectedMonth
         )
+        viewModelScope.launch {
+            prayerSettingsManager.settingsState
+                .map { Triple(it.methodIndex, it.asrJuristic, it.hijriOffset) }
+                .distinctUntilChanged()
+                .drop(1)
+                .collect {
+                    loadCalendar(
+                        year = _uiState.value.selectedYear,
+                        month = _uiState.value.selectedMonth
+                    )
+                }
+        }
     }
 
     fun loadCalendar(year: Int, month: Int) {

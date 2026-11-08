@@ -18,9 +18,11 @@ data class NameOfAllah(
  */
 data class MoreUiState(
     val notificationsEnabled: Boolean = true,
-    val selectedMethodIndex: Int = 2, // MWL default
+    val selectedMethodIndex: Int = 2,
     val selectedAsrJuristic: Int = 0, // 0: Standard, 1: Hanafi
     val selectedHijriOffset: Int = 0, // -2 to +2
+    val isMethodManuallySelected: Boolean = false,
+    val isAsrManuallySelected: Boolean = false,
     val showMethodDialog: Boolean = false,
     val showAsrDialog: Boolean = false,
     val showHijriOffsetDialog: Boolean = false,

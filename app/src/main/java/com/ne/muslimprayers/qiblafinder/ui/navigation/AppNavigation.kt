@@ -30,11 +30,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -79,6 +83,9 @@ fun AppNavigation(
         Screen.More.route
     )
 
+    var isQuranFullScreen by remember { mutableStateOf(false) }
+    val showNavBars = isMainTab && !(currentRoute == Screen.Quran.route && isQuranFullScreen)
+
     if (isLandscape && isMainTab) {
         // Landscape Navigation Rail
         Row(
@@ -86,60 +93,62 @@ fun AppNavigation(
                 .fillMaxSize()
                 .background(WarmParchment)
         ) {
-            NavigationRail(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .border(
-                        width = 1.sdp,
-                        color = DividerColor
-                    ),
-                containerColor = PureAlabaster,
-                header = {
-                    Image(
-                        painter = painterResource(id = R.mipmap.icon),
-                        contentDescription = "App Icon",
-                        modifier = Modifier
-                            .padding(vertical = 12.sdp)
-                            .size(36.sdp)
-                            .clip(CircleShape)
-                            .border(1.sdp, DesertOchre, CircleShape)
-                    )
-                }
-            ) {
-                Spacer(modifier = Modifier.height(8.sdp))
-                bottomNavItems.forEach { item ->
-                    val selected = currentRoute == item.route
-                    NavigationRailItem(
-                        selected = selected,
-                        onClick = {
-                            navController.navigate(item.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = {
-                            Icon(
-                                imageVector = item.icon,
-                                contentDescription = item.title
-                            )
-                        },
-                        label = {
-                            Text(
-                                text = item.title,
-                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
-                            )
-                        },
-                        colors = NavigationRailItemDefaults.colors(
-                            selectedIconColor = MedinaSage,
-                            selectedTextColor = MedinaSage,
-                            indicatorColor = MedinaSageLight,
-                            unselectedIconColor = TextSecondary,
-                            unselectedTextColor = TextSecondary
+            if (showNavBars) {
+                NavigationRail(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .border(
+                            width = 1.sdp,
+                            color = DividerColor
+                        ),
+                    containerColor = PureAlabaster,
+                    header = {
+                        Image(
+                            painter = painterResource(id = R.mipmap.icon),
+                            contentDescription = "App Icon",
+                            modifier = Modifier
+                                .padding(vertical = 12.sdp)
+                                .size(36.sdp)
+                                .clip(CircleShape)
+                                .border(1.sdp, DesertOchre, CircleShape)
                         )
-                    )
+                    }
+                ) {
+                    Spacer(modifier = Modifier.height(8.sdp))
+                    bottomNavItems.forEach { item ->
+                        val selected = currentRoute == item.route
+                        NavigationRailItem(
+                            selected = selected,
+                            onClick = {
+                                navController.navigate(item.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = item.icon,
+                                    contentDescription = item.title
+                                )
+                            },
+                            label = {
+                                Text(
+                                    text = item.title,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            },
+                            colors = NavigationRailItemDefaults.colors(
+                                selectedIconColor = MedinaSage,
+                                selectedTextColor = MedinaSage,
+                                indicatorColor = MedinaSageLight,
+                                unselectedIconColor = TextSecondary,
+                                unselectedTextColor = TextSecondary
+                            )
+                        )
+                    }
                 }
             }
 
@@ -148,7 +157,10 @@ fun AppNavigation(
                     .weight(1f)
                     .fillMaxHeight()
             ) {
-                AppNavHost(navController = navController)
+                AppNavHost(
+                    navController = navController,
+                    onQuranFullScreenChanged = { isQuranFullScreen = it }
+                )
             }
         }
     } else {
@@ -156,7 +168,7 @@ fun AppNavigation(
         Scaffold(
             bottomBar = {
                 AnimatedVisibility(
-                    visible = isMainTab,
+                    visible = showNavBars,
                     enter = slideInVertically(initialOffsetY = { it }),
                     exit = slideOutVertically(targetOffsetY = { it })
                 ) {
@@ -215,16 +227,22 @@ fun AppNavigation(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = innerPadding.calculateBottomPadding())
+                    .padding(bottom = if (showNavBars) innerPadding.calculateBottomPadding() else 0.dp)
             ) {
-                AppNavHost(navController = navController)
+                AppNavHost(
+                    navController = navController,
+                    onQuranFullScreenChanged = { isQuranFullScreen = it }
+                )
             }
         }
     }
 }
 
 @Composable
-private fun AppNavHost(navController: NavHostController) {
+private fun AppNavHost(
+    navController: NavHostController,
+    onQuranFullScreenChanged: (Boolean) -> Unit = {}
+) {
     NavHost(
         navController = navController,
         startDestination = Screen.Splash.route
@@ -252,7 +270,7 @@ private fun AppNavHost(navController: NavHostController) {
         }
 
         composable(Screen.Quran.route) {
-            QuranScreen()
+            QuranScreen(onFullScreenChanged = onQuranFullScreenChanged)
         }
 
         composable(Screen.Hadith.route) {
@@ -265,7 +283,8 @@ private fun AppNavHost(navController: NavHostController) {
 
         composable(Screen.More.route) {
             MoreScreen(
-                onNavigateToSalahTracker = { navController.navigate(Screen.SalahTracker.route) }
+                onNavigateToSalahTracker = { navController.navigate(Screen.SalahTracker.route) },
+                onNavigateToPrayerAlarm = { navController.navigate(Screen.PrayerAlarm.route) }
             )
         }
 

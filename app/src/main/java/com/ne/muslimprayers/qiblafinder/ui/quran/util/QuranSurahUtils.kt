@@ -1,5 +1,7 @@
 package com.ne.muslimprayers.qiblafinder.ui.quran.util
 
+import com.ne.muslimprayers.qiblafinder.ui.quran.AVAILABLE_RECITERS
+
 object QuranSurahUtils {
 
     /**
@@ -34,10 +36,12 @@ object QuranSurahUtils {
     }
 
     /**
-     * Returns the CDN audio URL for any verse and reciter.
+     * Returns the CDN audio URL for any verse and reciter using the reciter's supported bitrate.
      */
     fun getAudioUrl(reciterId: String, surahNumber: Int, ayahNumberInSurah: Int): String {
+        val effectiveReciter = if (reciterId == "ar.warsh") "ar.husary" else reciterId
+        val bitRate = AVAILABLE_RECITERS.find { it.id == effectiveReciter }?.bitRate ?: "128"
         val globalAyah = getGlobalAyahNumber(surahNumber, ayahNumberInSurah)
-        return "https://cdn.islamic.network/quran/audio/128/$reciterId/$globalAyah.mp3"
+        return "https://cdn.islamic.network/quran/audio/$bitRate/$effectiveReciter/$globalAyah.mp3"
     }
 }

@@ -1,9 +1,18 @@
 package com.ne.muslimprayers.qiblafinder.core.utils.prayer
 
+import com.ne.muslimprayers.qiblafinder.core.common.PrayerCalculationMethod
+import com.ne.muslimprayers.qiblafinder.core.common.PrayerSettingsManager
 import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone
-import kotlin.math.*
+import kotlin.math.abs
+import kotlin.math.acos
+import kotlin.math.asin
+import kotlin.math.atan
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.tan
 
 /**
  * Data holder for the 6 canonical Islamic prayer times calculated for a specific date.
@@ -20,18 +29,9 @@ data class CalculatedPrayerTimes(
 /**
  * High-precision offline Astronomical Islamic Prayer Times Calculator.
  *
- * Implements the standard solar astronomical formulas used worldwide by:
- * - Muslim World League (MWL)
- * - Islamic Society of North America (ISNA)
- * - Umm Al-Qura University, Makkah
- * - University of Islamic Sciences, Karachi
- * - Egyptian General Authority of Survey
- *
- * GUARANTEES:
- * 1. 100% Offline: Requires zero network connections, zero API calls, and zero external libraries.
- * 2. Instant: Runs in < 1 ms.
- * 3. Worldwide Accuracy: Accurately calculates solar declination, equation of time, solar noon,
- *    and twilight angles adjusted for the device's timezone and daylight saving time.
+ * Supports all major world conventions (Karachi, ISNA, MWL, Umm Al-Qura, Egyptian,
+ * Tehran, Gulf, Turkey Diyanet, MUIS/JAKIM) and both Standard (Shafi'i 1x) and Hanafi (2x)
+ * Asr juristic schools.
  */
 object PrayerTimeCalculator {
 
@@ -41,6 +41,8 @@ object PrayerTimeCalculator {
         year: Int,
         month: Int,
         day: Int,
+        method: PrayerCalculationMethod? = null,
+        asrJuristic: Int? = null,
         timeZone: TimeZone = TimeZone.getDefault()
     ): CalculatedPrayerTimes {
         val cal = Calendar.getInstance(timeZone).apply {
@@ -54,32 +56,39 @@ object PrayerTimeCalculator {
         }
         val tzOffsetHours = timeZone.getOffset(cal.timeInMillis) / 3600000.0
 
-        // Get calculation method parameters tailored to the user's geographic region
-        val (fajrAngle, ishaAngle, asrFactor) = getMethodParameters(latitude, longitude)
+        val effectiveMethod = method
+            ?: PrayerSettingsManager.detectMethodFromDemographyAndCoordinates(latitude, longitude)
+        val effectiveAsrSchool = asrJuristic ?: effectiveMethod.defaultAsrSchool
 
-        // 1. Calculate Julian Date
+        val fajrAngle = effectiveMethod.fajrAngle
+        val ishaAngle = effectiveMethod.ishaAngle
+        val ishaFixedMinutes = effectiveMethod.ishaFixedMinutes
+        val asrFactor = if (effectiveAsrSchool == 1) 2.0 else 1.0
+
+        // 1. Calculate Julian Date at local noon
         val y = if (month <= 2) year - 1 else year
         val m = if (month <= 2) month + 12 else month
         val a = y / 100
         val b = 2 - a + a / 4
-        val jd = (365.25 * (y + 4716)).toInt() + (30.6001 * (m + 1)).toInt() + day + b - 1524.5
+        val jd = (365.25 * (y + 4716)).toInt() + (30.6001 * (m + 1)).toInt() + day + b - 1524.5 - (longitude / 360.0)
 
         val d = jd - 2451545.0
 
         // 2. Solar coordinates (Mean anomaly & Mean longitude)
-        val meanAnomaly = Math.toRadians((357.529 + 0.98560028 * d) % 360.0)
-        val meanLongitude = (280.459 + 0.98564736 * d) % 360.0
+        val meanAnomalyDeg = normalizeDegrees(357.529 + 0.98560028 * d)
+        val meanAnomaly = Math.toRadians(meanAnomalyDeg)
+        val meanLongitude = normalizeDegrees(280.459 + 0.98564736 * d)
 
         // Ecliptic longitude
-        val eclipticLongitude = Math.toRadians(
-            (meanLongitude + 1.915 * sin(meanAnomaly) + 0.020 * sin(2 * meanAnomaly)) % 360.0
+        val eclipticLongitudeDeg = normalizeDegrees(
+            meanLongitude + 1.915 * sin(meanAnomaly) + 0.020 * sin(2 * meanAnomaly)
         )
+        val eclipticLongitude = Math.toRadians(eclipticLongitudeDeg)
         val obliquity = Math.toRadians(23.439 - 0.00000036 * d)
 
         // Right ascension & Declination
         val raRad = atan2(cos(obliquity) * sin(eclipticLongitude), cos(eclipticLongitude))
-        var raDeg = Math.toDegrees(raRad)
-        if (raDeg < 0.0) raDeg += 360.0
+        val raDeg = normalizeDegrees(Math.toDegrees(raRad))
         val raHours = raDeg / 15.0
 
         val declinationRad = asin(sin(obliquity) * sin(eclipticLongitude))
@@ -106,8 +115,8 @@ object PrayerTimeCalculator {
             }
         }
 
-        // Sunrise and Sunset (Sun semi-diameter + atmospheric refraction: -0.833°)
-        val haSun = hourAngle(-0.833)
+        // Sunrise and Sunset (Sun semi-diameter + atmospheric refraction: -0.8333°)
+        val haSun = hourAngle(-0.8333)
         val sunrise = noon - haSun
         val sunset = noon + haSun
 
@@ -115,16 +124,30 @@ object PrayerTimeCalculator {
         val haFajr = hourAngle(-fajrAngle)
         val fajr = noon - haFajr
 
-        // Isha
-        val haIsha = hourAngle(-ishaAngle)
-        val isha = noon + haIsha
+        // Maghrib (Standard astronomical sunset; Tehran uses 4.5° twilight)
+        val maghrib = if (effectiveMethod == PrayerCalculationMethod.TEHRAN) {
+            noon + hourAngle(-4.5)
+        } else {
+            sunset
+        }
 
-        // Asr (Shadow angle calculation based on shadow multiplier)
+        // Isha (either fixed interval after Maghrib for Umm Al-Qura / Gulf, or solar depression angle)
+        val isha = if (ishaFixedMinutes != null) {
+            maghrib + (ishaFixedMinutes / 60.0)
+        } else {
+            val haIsha = hourAngle(-ishaAngle)
+            noon + haIsha
+        }
+
+        // Asr (Shadow angle calculation based on shadow multiplier: 1x Standard, 2x Hanafi)
         val angleDiff = Math.toRadians(abs(latitude - declinationDeg))
         val cotAlt = asrFactor + tan(angleDiff)
         val altAsrDeg = Math.toDegrees(atan(1.0 / cotAlt))
         val haAsr = hourAngle(altAsrDeg)
         val asr = noon + haAsr
+
+        // Dhuhr (1 minute past solar zenith to ensure sun has crossed the meridian)
+        val dhuhr = noon + (1.0 / 60.0)
 
         fun formatHours(h: Double): String {
             var hNorm = h % 24.0
@@ -138,30 +161,16 @@ object PrayerTimeCalculator {
         return CalculatedPrayerTimes(
             fajr = formatHours(fajr),
             sunrise = formatHours(sunrise),
-            dhuhr = formatHours(noon + 2.0 / 60.0), // Standard 2 min buffer after solar noon
+            dhuhr = formatHours(dhuhr),
             asr = formatHours(asr),
-            maghrib = formatHours(sunset + 2.0 / 60.0), // Standard 2 min buffer after sunset
+            maghrib = formatHours(maghrib),
             isha = formatHours(isha)
         )
     }
 
-    private fun getMethodParameters(lat: Double, lng: Double): Triple<Double, Double, Double> {
-        return if (lng in 60.0..95.0 && lat in 5.0..40.0) {
-            // Indian Subcontinent (Karachi method, Hanafi Asr):
-            Triple(18.0, 18.0, 2.0)
-        } else if (lng in 30.0..60.0 && lat in 12.0..35.0) {
-            // Middle East & Gulf (Umm Al-Qura / MWL):
-            Triple(18.5, 17.5, 1.0)
-        } else if (lng in -170.0..-50.0 && lat in 15.0..70.0) {
-            // North America (ISNA):
-            Triple(15.0, 15.0, 1.0)
-        } else if (lng in 20.0..35.0 && lat in 20.0..32.0) {
-            // Egypt:
-            Triple(19.5, 17.5, 1.0)
-        } else {
-            // Muslim World League (Standard Global):
-            Triple(18.0, 17.0, 1.0)
-        }
+    private fun normalizeDegrees(deg: Double): Double {
+        var d = deg % 360.0
+        if (d < 0.0) d += 360.0
+        return d
     }
 }
-

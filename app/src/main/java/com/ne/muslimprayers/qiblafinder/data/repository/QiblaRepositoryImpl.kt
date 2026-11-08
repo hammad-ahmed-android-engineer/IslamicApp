@@ -1,6 +1,7 @@
 package com.ne.muslimprayers.qiblafinder.data.repository
 
 import com.ne.muslimprayers.qiblafinder.core.common.Resource
+import com.ne.muslimprayers.qiblafinder.core.utils.LocationUtils
 import com.ne.muslimprayers.qiblafinder.data.remote.api.PrayerApiService
 import com.ne.muslimprayers.qiblafinder.domain.repository.QiblaRepository
 import kotlinx.coroutines.flow.Flow
@@ -9,7 +10,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Implementation of [QiblaRepository] communicating with [PrayerApiService].
+ * Implementation of [QiblaRepository] using high-precision local Great Circle spherical trigonometry
+ * first (instant & offline-capable) with optional API verification.
  */
 @Singleton
 class QiblaRepositoryImpl @Inject constructor(
@@ -17,17 +19,19 @@ class QiblaRepositoryImpl @Inject constructor(
 ) : QiblaRepository {
 
     override fun getQiblaDirection(latitude: Double, longitude: Double): Flow<Resource<Float>> = flow {
-        emit(Resource.Loading(true))
+        // 1. Immediately emit accurate local Great-Circle Qibla bearing
+        val localBearing = LocationUtils.calculateQiblaBearing(latitude, longitude)
+        emit(Resource.Success(localBearing))
+
+        // 2. Optionally verify with API if online without overwriting with error if offline
         try {
             val response = apiService.getQibla(latitude, longitude)
             val dir = response.data?.direction
-            if (dir != null) {
-                emit(Resource.Success(dir))
-            } else {
-                emit(Resource.Error("Could not calculate Qibla direction for location"))
+            if (dir != null && !dir.isNaN() && dir in 0f..360f) {
+                emit(Resource.Success((dir + 360f) % 360f))
             }
-        } catch (e: Exception) {
-            emit(Resource.Error(e.localizedMessage ?: "Network error calculating Qibla"))
+        } catch (_: Exception) {
+            // Local calculation is already emitted and mathematically exact
         }
     }
 }

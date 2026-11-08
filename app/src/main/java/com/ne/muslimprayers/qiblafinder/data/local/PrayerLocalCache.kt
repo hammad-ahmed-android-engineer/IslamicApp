@@ -15,7 +15,8 @@ import kotlin.math.roundToInt
 
 /**
  * Dedicated local storage cache for monthly prayer schedules and calendar data.
- * Keeps previously fetched online schedules persistently on disk so they are available offline.
+ * Keeps previously fetched online schedules persistently on disk keyed by coordinates,
+ * calculation method, juristic school, and Hijri adjustment.
  */
 @Singleton
 class PrayerLocalCache @Inject constructor(
@@ -27,10 +28,18 @@ class PrayerLocalCache @Inject constructor(
         File(context.filesDir, "prayer_cache").apply { mkdirs() }
     }
 
-    private fun getCacheKey(lat: Double, lng: Double, year: Int, month: Int): String {
+    private fun getCacheKey(
+        lat: Double,
+        lng: Double,
+        year: Int,
+        month: Int,
+        methodId: Int,
+        school: Int,
+        hijriOffset: Int
+    ): String {
         val latKey = (lat * 10).roundToInt()
         val lngKey = (lng * 10).roundToInt()
-        return "cal_${latKey}_${lngKey}_${year}_${month}.json"
+        return "cal_${latKey}_${lngKey}_${year}_${month}_m${methodId}_s${school}_h${hijriOffset}.json"
     }
 
     suspend fun saveCalendar(
@@ -38,11 +47,14 @@ class PrayerLocalCache @Inject constructor(
         lng: Double,
         year: Int,
         month: Int,
-        data: List<ScheduleResponse>
+        data: List<ScheduleResponse>,
+        methodId: Int = 3,
+        school: Int = 0,
+        hijriOffset: Int = 0
     ) = withContext(Dispatchers.IO) {
         if (data.isEmpty()) return@withContext
         try {
-            val file = File(cacheDir, getCacheKey(lat, lng, year, month))
+            val file = File(cacheDir, getCacheKey(lat, lng, year, month, methodId, school, hijriOffset))
             val json = gson.toJson(data)
             file.writeText(json)
         } catch (e: Exception) {
@@ -54,10 +66,13 @@ class PrayerLocalCache @Inject constructor(
         lat: Double,
         lng: Double,
         year: Int,
-        month: Int
+        month: Int,
+        methodId: Int = 3,
+        school: Int = 0,
+        hijriOffset: Int = 0
     ): List<ScheduleResponse>? = withContext(Dispatchers.IO) {
         try {
-            val file = File(cacheDir, getCacheKey(lat, lng, year, month))
+            val file = File(cacheDir, getCacheKey(lat, lng, year, month, methodId, school, hijriOffset))
             if (file.exists() && file.length() > 0) {
                 val json = file.readText()
                 val type = object : TypeToken<List<ScheduleResponse>>() {}.type
@@ -69,4 +84,3 @@ class PrayerLocalCache @Inject constructor(
         null
     }
 }
-

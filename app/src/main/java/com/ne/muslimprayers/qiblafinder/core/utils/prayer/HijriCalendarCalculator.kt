@@ -1,5 +1,7 @@
 package com.ne.muslimprayers.qiblafinder.core.utils.prayer
 
+import java.util.Calendar
+
 /**
  * Result data for offline Islamic lunar calendar conversion.
  */
@@ -15,8 +17,8 @@ data class HijriDateResult(
 /**
  * Offline Astronomical Hijri Calendar Calculator.
  *
- * Implements the standard Umm Al-Qura / Julian Day Islamic lunar epoch conversion algorithm.
- * Identifies major Islamic events and holidays without needing an active internet connection.
+ * Implements the standard Umm Al-Qura / Julian Day Islamic lunar epoch conversion algorithm
+ * with support for user-configured Hijri day offset (-2 to +2 days).
  */
 object HijriCalendarCalculator {
 
@@ -26,16 +28,31 @@ object HijriCalendarCalculator {
         "Ramadan", "Shawwal", "Dhu al-Qi'dah", "Dhu al-Hijjah"
     )
 
-    fun calculate(year: Int, month: Int, day: Int): HijriDateResult {
-        var y = year
-        var m = month
+    fun calculate(
+        year: Int,
+        month: Int,
+        day: Int,
+        hijriOffsetDays: Int = 0
+    ): HijriDateResult {
+        val cal = Calendar.getInstance().apply {
+            set(Calendar.YEAR, year)
+            set(Calendar.MONTH, month - 1)
+            set(Calendar.DAY_OF_MONTH, day)
+            if (hijriOffsetDays != 0) {
+                add(Calendar.DAY_OF_MONTH, hijriOffsetDays)
+            }
+        }
+        var y = cal.get(Calendar.YEAR)
+        var m = cal.get(Calendar.MONTH) + 1
+        val d = cal.get(Calendar.DAY_OF_MONTH)
+
         if (m <= 2) {
             y -= 1
             m += 12
         }
         val a = y / 100
         val b = 2 - a + a / 4
-        val jd = (365.25 * (y + 4716)).toInt() + (30.6001 * (m + 1)).toInt() + day + b - 1524
+        val jd = (365.25 * (y + 4716)).toInt() + (30.6001 * (m + 1)).toInt() + d + b - 1524
 
         // Julian Day to Islamic Epoch (JD 1948439.5 - July 16, 622 AD)
         var jdIslamic = jd - 1948440 + 10632
@@ -74,4 +91,3 @@ object HijriCalendarCalculator {
         )
     }
 }
-

@@ -1,6 +1,9 @@
 package com.ne.muslimprayers.qiblafinder.ui.compass
 
+import android.Manifest
 import android.content.res.Configuration
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -15,26 +18,37 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ne.muslimprayers.qiblafinder.R
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.GoldPrimary
+import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
 import com.ne.muslimprayers.qiblafinder.core.theme.SuccessGreen
 import com.ne.muslimprayers.qiblafinder.core.theme.WarmParchment
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
+import com.ne.muslimprayers.qiblafinder.core.utils.LocationUtils
 import com.ne.muslimprayers.qiblafinder.ui.compass.components.CalibrationNotice
-import com.ne.muslimprayers.qiblafinder.ui.compass.components.LocationHeaderCard
 import com.ne.muslimprayers.qiblafinder.ui.compass.components.QiblaCompassVisualizer
 import com.ne.muslimprayers.qiblafinder.ui.compass.components.ReadingsCard
 import com.ne.muslimprayers.qiblafinder.ui.compass.components.StatusBanner
@@ -47,25 +61,55 @@ fun CompassScreen(
     onBackClick: () -> Unit
 ) {
     val state by viewModel.qiblaState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-    // Calculate relative angle to Qibla: 0° = perfectly aligned with top
-    val relativeAngle = ((state.qiblaBearing - state.compassAzimuth + 540f) % 360f) - 180f
-    val isFacingQibla = abs(relativeAngle) < 4f && state.isLocationAvailable
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) {
+        viewModel.initLocationAndCompass()
+    }
 
-    // Trigger haptic feedback when aligned
+    val handleRefresh: () -> Unit = {
+        if (!LocationUtils.hasLocationPermission(context)) {
+            permissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        } else {
+            viewModel.initLocationAndCompass()
+        }
+    }
+
+    // Calculate relative angle to Qibla in [-180, 180]: 0° = perfectly aligned with top of phone
+    val relativeAngle = ((state.qiblaBearing - state.compassAzimuth + 540f) % 360f) - 180f
+    val isFacingQibla = abs(relativeAngle) < 5f && state.isLocationAvailable
+
+    // Trigger haptic feedback when aligned with the Kaaba
     LaunchedEffect(isFacingQibla) {
         if (isFacingQibla) {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
         }
     }
 
-    // Dial rotates smoothly with the compass heading
+    // Unwrap dial target rotation so crossing 0°/360° smoothly rotates by shortest path
+    var continuousDialTarget by remember { mutableFloatStateOf(-state.compassAzimuth) }
+    LaunchedEffect(state.compassAzimuth) {
+        val desired = -state.compassAzimuth
+        val delta = ((desired - continuousDialTarget + 540f) % 360f) - 180f
+        continuousDialTarget += delta
+    }
+
     val animatedDialRotation by animateFloatAsState(
-        targetValue = -state.compassAzimuth,
-        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        targetValue = continuousDialTarget,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
         label = "dial_rotation"
     )
 
@@ -77,24 +121,35 @@ fun CompassScreen(
     Scaffold(
         topBar = {
             IslamicTopAppBar(
-                title = "Qibla Finder (اتجاه القبلة)",
-                onBackClick = onBackClick
+                title = stringResource(R.string.compass_screen_title),
+                onBackClick = onBackClick,
+                actions = {
+                    IconButton(onClick = handleRefresh) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = stringResource(R.string.refresh_location),
+                            tint = MedinaSage,
+                            modifier = Modifier.size(AppDimensions.iconMedium)
+                        )
+                    }
+                }
             )
         },
         containerColor = WarmParchment,
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         if (isLandscape) {
-            // Landscape Two-Column Dashboard Layout
             Row(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(horizontal = 16.sdp, vertical = 8.sdp),
-                horizontalArrangement = Arrangement.spacedBy(16.sdp),
+                    .padding(
+                        horizontal = AppDimensions.paddingMedium,
+                        vertical = AppDimensions.paddingSmall
+                    ),
+                horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingMedium),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Left Pane: Compass Visualizer
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -106,19 +161,17 @@ fun CompassScreen(
                         isFacingQibla = isFacingQibla,
                         animatedDialRotation = animatedDialRotation,
                         statusBorderColor = statusBorderColor,
-                        size = 230
+                        size = 220
                     )
                 }
 
-                // Right Pane: Info & Status
                 Column(
                     modifier = Modifier
                         .weight(1.2f)
                         .fillMaxHeight()
                         .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(10.sdp)
+                    verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingSmall)
                 ) {
-                    LocationHeaderCard(state = state, onRefresh = viewModel::initLocationAndCompass)
                     StatusBanner(
                         isFacingQibla = isFacingQibla,
                         relativeAngle = relativeAngle,
@@ -126,23 +179,21 @@ fun CompassScreen(
                         statusBorderColor = statusBorderColor
                     )
                     ReadingsCard(state = state, isFacingQibla = isFacingQibla)
-                    CalibrationNotice()
+                    CalibrationNotice(
+                        sensorAccuracy = state.sensorAccuracy,
+                        isSensorAvailable = state.isSensorAvailable
+                    )
                 }
             }
         } else {
-            // Portrait View
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
                     .verticalScroll(rememberScrollState())
-                    .padding(16.sdp),
+                    .padding(AppDimensions.paddingMedium),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                LocationHeaderCard(state = state, onRefresh = viewModel::initLocationAndCompass)
-
-                Spacer(modifier = Modifier.height(12.sdp))
-
                 StatusBanner(
                     isFacingQibla = isFacingQibla,
                     relativeAngle = relativeAngle,
@@ -150,24 +201,26 @@ fun CompassScreen(
                     statusBorderColor = statusBorderColor
                 )
 
-                Spacer(modifier = Modifier.height(20.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingLarge))
 
-                // Compass Visualizer with Fixed Qibla Point at 12 o'clock
                 QiblaCompassVisualizer(
                     state = state,
                     isFacingQibla = isFacingQibla,
                     animatedDialRotation = animatedDialRotation,
                     statusBorderColor = statusBorderColor,
-                    size = 290
+                    size = 280
                 )
 
-                Spacer(modifier = Modifier.height(20.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingLarge))
 
                 ReadingsCard(state = state, isFacingQibla = isFacingQibla)
 
-                Spacer(modifier = Modifier.height(14.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingMedium))
 
-                CalibrationNotice()
+                CalibrationNotice(
+                    sensorAccuracy = state.sensorAccuracy,
+                    isSensorAvailable = state.isSensorAvailable
+                )
             }
         }
     }

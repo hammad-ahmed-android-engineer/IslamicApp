@@ -13,7 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 
 @Composable
 fun LoadingState(modifier: Modifier = Modifier, message: String = "Loading prayer timings...") {
@@ -27,10 +27,10 @@ fun LoadingState(modifier: Modifier = Modifier, message: String = "Loading praye
         ) {
             CircularProgressIndicator(
                 color = MaterialTheme.colorScheme.primary,
-                strokeWidth = 3.sdp,
-                modifier = Modifier.size(44.sdp)
+                strokeWidth = AppDimensions.borderWidthThick,
+                modifier = Modifier.size(AppDimensions.avatarSize)
             )
-            Spacer(modifier = Modifier.height(16.sdp))
+            Spacer(modifier = Modifier.height(AppDimensions.paddingMedium))
             AppText.BodyMedium(
                 text = message,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

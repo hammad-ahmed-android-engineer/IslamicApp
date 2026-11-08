@@ -1,41 +1,36 @@
 package com.ne.muslimprayers.qiblafinder.ui.quran.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import com.ne.muslimprayers.qiblafinder.core.utils.clickableDebounced
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 import com.ne.muslimprayers.qiblafinder.core.theme.DividerColor
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.domain.model.Surah
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
+import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
 
 @Composable
 fun SurahListItemCard(
@@ -45,24 +40,14 @@ fun SurahListItemCard(
     onDownloadClick: (() -> Unit)? = null,
     onClick: () -> Unit
 ) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(18.sdp))
-            .clickableDebounced { onClick() }
-            .border(
-                width = 1.sdp,
-                color = DividerColor,
-                shape = RoundedCornerShape(18.sdp)
-            ),
-        shape = RoundedCornerShape(18.sdp),
-        color = PureAlabaster,
-        tonalElevation = 1.sdp
+    IslamicCard(
+        modifier = Modifier.fillMaxWidth(),
+        backgroundColor = PureAlabaster,
+        borderColor = DividerColor,
+        onClick = onClick
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.sdp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -72,7 +57,7 @@ fun SurahListItemCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(38.sdp)
+                        .size(AppDimensions.avatarSize)
                         .clip(CircleShape)
                         .background(DesertOchre),
                     contentAlignment = Alignment.Center
@@ -84,7 +69,7 @@ fun SurahListItemCard(
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.sdp))
+                Spacer(modifier = Modifier.width(AppDimensions.paddingSmall))
 
                 Column(modifier = Modifier.weight(1f)) {
                     AppText.TitleMedium(
@@ -102,40 +87,35 @@ fun SurahListItemCard(
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // Only show download button if NOT already downloaded
                 if (isDownloading) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(20.sdp),
+                        modifier = Modifier.size(AppDimensions.iconMedium),
                         color = MedinaSage,
-                        strokeWidth = 2.dp
+                        strokeWidth = AppDimensions.borderWidthThick
                     )
-                    Spacer(modifier = Modifier.width(8.sdp))
-                } else if (isDownloaded) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = "Downloaded Offline",
-                        tint = MedinaSage,
-                        modifier = Modifier.size(18.sdp)
-                    )
-                    Spacer(modifier = Modifier.width(8.sdp))
-                } else if (onDownloadClick != null) {
+                    Spacer(modifier = Modifier.width(AppDimensions.paddingSmall))
+                } else if (!isDownloaded && onDownloadClick != null) {
                     IconButton(
                         onClick = onDownloadClick,
-                        modifier = Modifier.size(28.sdp)
+                        modifier = Modifier.size(AppDimensions.buttonSmallHeight)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Download,
                             contentDescription = "Download Surah Audio",
-                            tint = MedinaSage.copy(alpha = 0.7f),
-                            modifier = Modifier.size(18.sdp)
+                            tint = MedinaSage.copy(alpha = 0.75f),
+                            modifier = Modifier.size(AppDimensions.iconMedium)
                         )
                     }
-                    Spacer(modifier = Modifier.width(6.sdp))
+                    Spacer(modifier = Modifier.width(AppDimensions.paddingTiny))
                 }
 
-                AppText.HeadingLarge(
+                AppText.ArabicText(
                     text = surah.arabicName,
                     color = MedinaSage,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 20.sp,
+                    maxLines = 1,
+                    applySafePadding = false
                 )
             }
         }

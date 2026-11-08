@@ -1,12 +1,17 @@
 package com.ne.muslimprayers.qiblafinder.ui.ibadat.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Share
@@ -16,10 +21,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.sp
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
+import com.ne.muslimprayers.qiblafinder.R
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
+import com.ne.muslimprayers.qiblafinder.core.theme.AppTypography
+import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
+import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
+import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSageLight
 import com.ne.muslimprayers.qiblafinder.domain.model.DuaItem
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
@@ -45,7 +56,7 @@ fun DuaItemCard(
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.SemiBold
                     )
-                    Spacer(modifier = Modifier.height(2.sdp))
+                    Spacer(modifier = Modifier.height(AppDimensions.paddingMicro))
                     AppText.TitleMedium(
                         text = dua.title,
                         fontWeight = FontWeight.Bold,
@@ -58,34 +69,47 @@ fun DuaItemCard(
                     IconButton(onClick = onCopy) {
                         Icon(
                             imageVector = Icons.Default.ContentCopy,
-                            contentDescription = "Copy Dua",
+                            contentDescription = stringResource(R.string.copy),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(18.sdp)
+                            modifier = Modifier.size(AppDimensions.iconMedium)
                         )
                     }
                     IconButton(onClick = onShare) {
                         Icon(
                             imageVector = Icons.Default.Share,
-                            contentDescription = "Share Dua",
+                            contentDescription = stringResource(R.string.share),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(18.sdp)
+                            modifier = Modifier.size(AppDimensions.iconMedium)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.sdp))
+            Spacer(modifier = Modifier.height(AppDimensions.paddingSmall))
 
-            AppText.ArabicText(
-                text = dua.arabicText,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 22.sp,
-                textAlign = TextAlign.End,
-                modifier = Modifier.fillMaxWidth()
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(AppDimensions.cornerMedium))
+                    .background(MedinaSageLight.copy(alpha = 0.35f))
+                    .border(
+                        AppDimensions.borderWidthThin,
+                        DesertOchre.copy(alpha = 0.3f),
+                        RoundedCornerShape(AppDimensions.cornerMedium)
+                    )
+                    .padding(AppDimensions.paddingSmall)
+            ) {
+                AppText.ArabicText(
+                    text = dua.arabicText,
+                    color = MedinaSage,
+                    fontSize = AppTypography.QuranArabicMedium.fontSize,
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
             if (dua.transliteration.isNotBlank()) {
-                Spacer(modifier = Modifier.height(6.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingSmall))
                 AppText.BodySmall(
                     text = dua.transliteration,
                     fontWeight = FontWeight.SemiBold,
@@ -93,19 +117,20 @@ fun DuaItemCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(6.sdp))
+            Spacer(modifier = Modifier.height(AppDimensions.paddingSmall))
 
             AppText.BodyMedium(
                 text = "\"${dua.translation}\"",
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(modifier = Modifier.height(6.sdp))
-
-            AppText.Caption(
-                text = "Reference: ${dua.reference}",
-                color = MaterialTheme.colorScheme.outline
-            )
+            if (dua.reference.isNotBlank()) {
+                Spacer(modifier = Modifier.height(AppDimensions.paddingTiny))
+                AppText.Caption(
+                    text = stringResource(R.string.duas_reference_label, dua.reference),
+                    color = MaterialTheme.colorScheme.outline
+                )
+            }
         }
     }
 }

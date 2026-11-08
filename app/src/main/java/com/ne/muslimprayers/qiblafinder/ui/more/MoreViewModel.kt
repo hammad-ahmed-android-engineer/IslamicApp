@@ -3,39 +3,53 @@ package com.ne.muslimprayers.qiblafinder.ui.more
 import android.content.Context
 import android.media.MediaPlayer
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.ne.muslimprayers.qiblafinder.R
+import com.ne.muslimprayers.qiblafinder.core.common.LocationHelper
+import com.ne.muslimprayers.qiblafinder.core.common.PrayerCalculationMethod
+import com.ne.muslimprayers.qiblafinder.core.common.PrayerSettingsManager
+import com.ne.muslimprayers.qiblafinder.domain.repository.PrayerAlarmRepository
 import com.ne.muslimprayers.qiblafinder.domain.usecase.zakat.CalculateZakatUseCase
 import com.ne.muslimprayers.qiblafinder.domain.usecase.zakat.ZakatAssets
+import com.ne.muslimprayers.qiblafinder.service.AlarmScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class MoreViewModel @Inject constructor(
     private val calculateZakatUseCase: CalculateZakatUseCase,
+    private val prayerSettingsManager: PrayerSettingsManager,
+    private val prayerAlarmRepository: PrayerAlarmRepository,
+    private val alarmScheduler: AlarmScheduler,
+    private val locationHelper: LocationHelper,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
+    private val initialSettings = prayerSettingsManager.getCurrentSettings()
+
     private val _uiState = MutableStateFlow(
-        MoreUiState(namesOfAllah = create99NamesList())
+        MoreUiState(
+            notificationsEnabled = initialSettings.notificationsEnabled,
+            selectedMethodIndex = initialSettings.methodIndex,
+            selectedAsrJuristic = initialSettings.asrJuristic,
+            selectedHijriOffset = initialSettings.hijriOffset,
+            isMethodManuallySelected = initialSettings.isMethodManuallySelected,
+            isAsrManuallySelected = initialSettings.isAsrManuallySelected,
+            namesOfAllah = create99NamesList()
+        )
     )
     val uiState: StateFlow<MoreUiState> = _uiState.asStateFlow()
 
     private var mediaPlayer: MediaPlayer? = null
 
-    val calculationMethods = listOf(
-        "University of Islamic Sciences, Karachi (Hanafi)",
-        "Islamic Society of North America (ISNA)",
-        "Muslim World League (MWL)",
-        "Umm Al-Qura University, Makkah",
-        "Egyptian General Authority of Survey",
-        "Institute of Geophysics, University of Tehran",
-        "Gulf Region"
-    )
+    val calculationMethods: List<String> = PrayerCalculationMethod.entries.map { it.displayName }
 
     val asrSchools = listOf(
         "Standard (Shafi'i, Maliki, Hanbali)" to "Shadow length equals object length (1x)",
@@ -44,20 +58,62 @@ class MoreViewModel @Inject constructor(
 
     val hijriOffsets = listOf(-2, -1, 0, 1, 2)
 
+    init {
+        viewModelScope.launch {
+            prayerSettingsManager.settingsState.collect { settings ->
+                _uiState.update {
+                    it.copy(
+                        notificationsEnabled = settings.notificationsEnabled,
+                        selectedMethodIndex = settings.methodIndex,
+                        selectedAsrJuristic = settings.asrJuristic,
+                        selectedHijriOffset = settings.hijriOffset,
+                        isMethodManuallySelected = settings.isMethodManuallySelected,
+                        isAsrManuallySelected = settings.isAsrManuallySelected
+                    )
+                }
+            }
+        }
+    }
+
     fun toggleNotifications(enabled: Boolean) {
-        _uiState.update { it.copy(notificationsEnabled = enabled) }
+        prayerSettingsManager.setNotificationsEnabled(enabled)
+        viewModelScope.launch {
+            prayerAlarmRepository.initDefaultAlarmsIfEmpty()
+            val alarms = prayerAlarmRepository.getPrayerAlarms().firstOrNull().orEmpty()
+            for (alarm in alarms) {
+                if (enabled && alarm.isAlarmActive) {
+                    alarmScheduler.scheduleAlarm(alarm)
+                } else {
+                    alarmScheduler.cancelAlarm(alarm.id)
+                }
+            }
+        }
     }
 
     fun selectMethod(index: Int) {
-        _uiState.update { it.copy(selectedMethodIndex = index, showMethodDialog = false) }
+        prayerSettingsManager.setManualCalculationMethod(index)
+        _uiState.update { it.copy(showMethodDialog = false) }
+    }
+
+    fun resetMethodToAutoDetect() {
+        viewModelScope.launch {
+            val loc = locationHelper.getLastSavedLocation() ?: locationHelper.getCurrentLocation()
+            prayerSettingsManager.resetToAutoDetect(
+                latitude = loc?.latitude ?: 0.0,
+                longitude = loc?.longitude ?: 0.0
+            )
+            _uiState.update { it.copy(showMethodDialog = false) }
+        }
     }
 
     fun selectAsrJuristic(index: Int) {
-        _uiState.update { it.copy(selectedAsrJuristic = index, showAsrDialog = false) }
+        prayerSettingsManager.setManualAsrJuristic(index)
+        _uiState.update { it.copy(showAsrDialog = false) }
     }
 
     fun selectHijriOffset(offset: Int) {
-        _uiState.update { it.copy(selectedHijriOffset = offset, showHijriOffsetDialog = false) }
+        prayerSettingsManager.setHijriOffset(offset)
+        _uiState.update { it.copy(showHijriOffsetDialog = false) }
     }
 
     fun toggleMethodDialog(show: Boolean) {

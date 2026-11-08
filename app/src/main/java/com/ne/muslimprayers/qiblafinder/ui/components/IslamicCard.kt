@@ -1,7 +1,6 @@
 package com.ne.muslimprayers.qiblafinder.ui.components
 
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,10 +9,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DividerColor
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
-
 import com.ne.muslimprayers.qiblafinder.core.utils.clickableDebounced
 
 @Composable
@@ -21,6 +20,8 @@ fun IslamicCard(
     modifier: Modifier = Modifier,
     backgroundColor: Color = PureAlabaster,
     borderColor: Color = DividerColor,
+    cornerRadius: Dp = AppDimensions.cornerExtraLarge,
+    contentPadding: Dp = AppDimensions.paddingMedium,
     onClick: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
@@ -30,19 +31,21 @@ fun IslamicCard(
         modifier
     }
 
+    val shape = RoundedCornerShape(cornerRadius)
+
     Surface(
         modifier = clickableModifier
-            .clip(RoundedCornerShape(18.sdp))
+            .clip(shape)
             .border(
-                width = 1.sdp,
+                width = AppDimensions.borderWidthThin,
                 color = borderColor,
-                shape = RoundedCornerShape(18.sdp)
+                shape = shape
             ),
-        shape = RoundedCornerShape(18.sdp),
+        shape = shape,
         color = backgroundColor,
-        tonalElevation = 1.sdp
+        tonalElevation = AppDimensions.elevationLow
     ) {
-        Box(modifier = Modifier.padding(16.sdp)) {
+        Box(modifier = Modifier.padding(contentPadding)) {
             content()
         }
     }

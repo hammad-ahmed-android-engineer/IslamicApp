@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Share
@@ -24,10 +25,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ne.muslimprayers.qiblafinder.R
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.WarmParchment
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.core.utils.ShareUtils
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 import com.ne.muslimprayers.qiblafinder.ui.components.IslamicTopAppBar
@@ -43,7 +46,8 @@ import com.ne.muslimprayers.qiblafinder.ui.more.components.ZakatCalculatorDialog
 @Composable
 fun MoreScreen(
     viewModel: MoreViewModel = hiltViewModel(),
-    onNavigateToSalahTracker: (() -> Unit)? = null
+    onNavigateToSalahTracker: (() -> Unit)? = null,
+    onNavigateToPrayerAlarm: (() -> Unit)? = null
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -54,7 +58,9 @@ fun MoreScreen(
             methods = viewModel.calculationMethods,
             selectedIndex = state.selectedMethodIndex,
             onDismiss = { viewModel.toggleMethodDialog(false) },
-            onSelect = viewModel::selectMethod
+            onSelect = viewModel::selectMethod,
+            isAutoDetected = !state.isMethodManuallySelected,
+            onAutoDetect = viewModel::resetMethodToAutoDetect
         )
     }
 
@@ -101,9 +107,14 @@ fun MoreScreen(
         )
     }
 
+    val currentMethodName = viewModel.calculationMethods.getOrElse(state.selectedMethodIndex) {
+        "Muslim World League"
+    }
+    val methodBadge = if (state.isMethodManuallySelected) "(Custom)" else "(Auto-detected)"
+
     Scaffold(
         topBar = {
-            IslamicTopAppBar(title = "Settings & Features")
+            IslamicTopAppBar(title = stringResource(R.string.more_screen_title))
         },
         containerColor = WarmParchment,
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
@@ -112,30 +123,34 @@ fun MoreScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.sdp),
-            contentPadding = PaddingValues(top = 4.sdp, bottom = 24.sdp),
-            verticalArrangement = Arrangement.spacedBy(12.sdp)
+                .padding(horizontal = AppDimensions.paddingMedium),
+            contentPadding = PaddingValues(
+                top = AppDimensions.paddingTiny,
+                bottom = AppDimensions.paddingLarge
+            ),
+            verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingSmall)
         ) {
             item {
                 BrandingCard()
             }
 
             item {
-                SectionHeader("PRAYER CALCULATION SETTINGS")
+                SectionHeader(stringResource(R.string.more_prayer_settings_section).uppercase())
             }
 
             item {
                 MoreSettingItem(
-                    title = "Calculation Method",
-                    subtitle = viewModel.calculationMethods.getOrElse(state.selectedMethodIndex) { "Muslim World League" },
+                    title = "${stringResource(R.string.prayers_calculation_method)} $methodBadge",
+                    subtitle = currentMethodName,
                     icon = Icons.Default.Tune,
                     onClick = { viewModel.toggleMethodDialog(true) }
                 )
             }
 
             item {
+                val asrBadge = if (state.isAsrManuallySelected) "(Custom)" else "(Default)"
                 MoreSettingItem(
-                    title = "Asr Juristic Method",
+                    title = "${stringResource(R.string.prayers_asr_juristic)} $asrBadge",
                     subtitle = viewModel.asrSchools.getOrElse(state.selectedAsrJuristic) { viewModel.asrSchools[0] }.first,
                     icon = Icons.Default.Scale,
                     onClick = { viewModel.toggleAsrDialog(true) }
@@ -144,10 +159,10 @@ fun MoreScreen(
 
             item {
                 MoreSettingItem(
-                    title = "Hijri Date Offset",
+                    title = stringResource(R.string.more_hijri_adjustment_label),
                     subtitle = when {
-                        state.selectedHijriOffset > 0 -> "+${state.selectedHijriOffset} Days"
-                        state.selectedHijriOffset < 0 -> "${state.selectedHijriOffset} Days"
+                        state.selectedHijriOffset > 0 -> "+${state.selectedHijriOffset} Days (Saved)"
+                        state.selectedHijriOffset < 0 -> "${state.selectedHijriOffset} Days (Saved)"
                         else -> "0 Days (Calculated)"
                     },
                     icon = Icons.Default.CalendarMonth,
@@ -157,12 +172,23 @@ fun MoreScreen(
 
             item {
                 MoreToggleItem(
-                    title = "Prayer Adhan Notifications",
-                    subtitle = "Receive timely Adhan audio alerts for daily salawat",
+                    title = stringResource(R.string.more_notifications_label),
+                    subtitle = "Master switch for daily prayer & Adhan notifications",
                     icon = Icons.Default.Notifications,
                     isChecked = state.notificationsEnabled,
                     onCheckedChange = viewModel::toggleNotifications
                 )
+            }
+
+            if (onNavigateToPrayerAlarm != null) {
+                item {
+                    MoreSettingItem(
+                        title = "Per-Prayer Notifications & Adhan",
+                        subtitle = "Enable/disable specific prayer alarms & choose Adhan or tone",
+                        icon = Icons.Default.NotificationsActive,
+                        onClick = onNavigateToPrayerAlarm
+                    )
+                }
             }
 
             item {
@@ -231,13 +257,20 @@ fun MoreScreen(
 
 @Composable
 private fun SectionHeader(title: String) {
-    AppText.Caption(
+    AppText.SectionHeader(
         text = title,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(top = 6.sdp, bottom = 2.sdp)
+        modifier = Modifier.padding(
+            top = AppDimensions.paddingSmall,
+            bottom = AppDimensions.paddingMicro
+        )
     )
 }
 
 private fun openPrivacyPolicy(context: Context) {
-    Toast.makeText(context, "Privacy Policy: All user location data is processed locally on device.", Toast.LENGTH_LONG).show()
+    Toast.makeText(
+        context,
+        "Privacy Policy: All user location data is processed locally on device.",
+        Toast.LENGTH_LONG
+    ).show()
 }

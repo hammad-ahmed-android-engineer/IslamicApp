@@ -1,64 +1,51 @@
 package com.ne.muslimprayers.qiblafinder.ui.quran.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import com.ne.muslimprayers.qiblafinder.core.utils.clickableDebounced
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DividerColor
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
+import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
 import com.ne.muslimprayers.qiblafinder.ui.quran.JuzInfo
 
 @Composable
 fun JuzListItemCard(
     juz: JuzInfo,
+    isDownloaded: Boolean = false,
     isDownloading: Boolean = false,
     onDownloadClick: (() -> Unit)? = null,
     onClick: () -> Unit
 ) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(18.sdp))
-            .clickableDebounced { onClick() }
-            .border(
-                width = 1.sdp,
-                color = DividerColor,
-                shape = RoundedCornerShape(18.sdp)
-            ),
-        shape = RoundedCornerShape(18.sdp),
-        color = PureAlabaster,
-        tonalElevation = 1.sdp
+    IslamicCard(
+        modifier = Modifier.fillMaxWidth(),
+        backgroundColor = PureAlabaster,
+        borderColor = DividerColor,
+        onClick = onClick
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.sdp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -68,7 +55,7 @@ fun JuzListItemCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(42.sdp)
+                        .size(AppDimensions.avatarSize)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.secondaryContainer),
                     contentAlignment = Alignment.Center
@@ -80,11 +67,11 @@ fun JuzListItemCard(
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.sdp))
+                Spacer(modifier = Modifier.width(AppDimensions.paddingSmall))
 
                 Column(modifier = Modifier.weight(1f)) {
                     AppText.TitleMedium(
-                        text = "Para / Juz ${juz.number} - ${juz.englishName}",
+                        text = "Juz ${juz.number} - ${juz.englishName}",
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1
@@ -98,31 +85,35 @@ fun JuzListItemCard(
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // Only show download button if NOT already downloaded
                 if (isDownloading) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(20.sdp),
+                        modifier = Modifier.size(AppDimensions.iconMedium),
                         color = MedinaSage,
-                        strokeWidth = 2.dp
+                        strokeWidth = AppDimensions.borderWidthThick
                     )
-                    Spacer(modifier = Modifier.width(8.sdp))
-                } else if (onDownloadClick != null) {
+                    Spacer(modifier = Modifier.width(AppDimensions.paddingSmall))
+                } else if (!isDownloaded && onDownloadClick != null) {
                     IconButton(
                         onClick = onDownloadClick,
-                        modifier = Modifier.size(28.sdp)
+                        modifier = Modifier.size(AppDimensions.buttonSmallHeight)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Download,
                             contentDescription = "Download Para Audio",
                             tint = MedinaSage,
-                            modifier = Modifier.size(18.sdp)
+                            modifier = Modifier.size(AppDimensions.iconMedium)
                         )
                     }
-                    Spacer(modifier = Modifier.width(6.sdp))
+                    Spacer(modifier = Modifier.width(AppDimensions.paddingTiny))
                 }
 
-                AppText.HeadingMedium(
+                AppText.ArabicText(
                     text = juz.arabicName,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 19.sp,
+                    maxLines = 1,
+                    applySafePadding = false
                 )
             }
         }

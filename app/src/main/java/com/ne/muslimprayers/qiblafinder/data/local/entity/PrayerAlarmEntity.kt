@@ -52,11 +52,11 @@ data class PrayerAlarmEntity(
         }
 
         val DEFAULT_ALARMS = listOf(
-            PrayerAlarmEntity(0, "FAJR", "05:00", false),
-            PrayerAlarmEntity(1, "DHUHR", "12:30", false),
-            PrayerAlarmEntity(2, "ASR", "15:45", false),
-            PrayerAlarmEntity(3, "MAGHRIB", "18:15", false),
-            PrayerAlarmEntity(4, "ISHA", "19:45", false)
+            PrayerAlarmEntity(0, "FAJR", "05:00", true),
+            PrayerAlarmEntity(1, "DHUHR", "12:30", true),
+            PrayerAlarmEntity(2, "ASR", "15:45", true),
+            PrayerAlarmEntity(3, "MAGHRIB", "18:15", true),
+            PrayerAlarmEntity(4, "ISHA", "19:45", true)
         )
     }
 }

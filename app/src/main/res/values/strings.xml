@@ -2,10 +2,213 @@
     <string name="app_name">Islamic App</string>
     <string name="allow">Allow</string>
     <string name="leave">Leave</string>
-
     <string name="menu_qibla">Qiblah</string>
-
     <string name="gps_settings_title">Enable GPS settings</string>
-    <string name="gps_settings_text">App required GPS which is not enabled, you must have to enable it before using
-        the App.</string>
+    <string name="gps_settings_text">App required GPS which is not enabled, you must have to enable it before using the App.</string>
+
+    <!-- Common / General -->
+    <string name="back">Back</string>
+    <string name="close">Close</string>
+    <string name="cancel">Cancel</string>
+    <string name="confirm">Confirm</string>
+    <string name="done">Done</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="share">Share</string>
+    <string name="copy">Copy</string>
+    <string name="search">Search</string>
+    <string name="clear">Clear</string>
+    <string name="retry">Retry</string>
+    <string name="refresh_location">Refresh Location</string>
+    <string name="loading">Loading…</string>
+    <string name="no_results_found">No results found</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_prayers">Prayers</string>
+    <string name="nav_quran">Quran</string>
+    <string name="nav_hadith">Hadith</string>
+    <string name="nav_ibadat">Ibadat</string>
+    <string name="nav_qibla">Qibla</string>
+    <string name="nav_calendar">Calendar</string>
+    <string name="nav_more">More</string>
+    <string name="nav_salah_tracker">Salah Tracker</string>
+
+    <!-- Splash Screen -->
+    <string name="splash_bismillah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</string>
+    <string name="splash_title">AL-FURQAN</string>
+    <string name="splash_subtitle">PRAYER • QURAN • QIBLA • DUAS</string>
+
+    <!-- Home Screen -->
+    <string name="home_assalamu_alaikum">Assalamu Alaikum</string>
+    <string name="home_next_prayer">NEXT PRAYER</string>
+    <string name="home_now_time_for">NOW: TIME FOR %1$s</string>
+    <string name="home_upcoming_salah">UPCOMING SALAH</string>
+    <string name="home_remaining_time">REMAINING TIME</string>
+    <string name="home_time_until_format">in %1$s</string>
+    <string name="home_todays_prayers">Today\'s Prayers</string>
+    <string name="home_see_all">See All</string>
+    <string name="home_quick_access">Quick Access</string>
+    <string name="home_daily_inspiration">Daily Inspiration</string>
+    <string name="home_verse_of_the_day">Verse of the Day</string>
+    <string name="home_dua_of_the_day">Dua of the Day</string>
+    <string name="home_hadith_of_the_day">Hadith of the Day</string>
+    <string name="home_hijri_calendar">Hijri Calendar</string>
+    <string name="home_tasbih_counter">Tasbih Counter</string>
+    <string name="home_muslim_duas">Muslim Duas</string>
+    <string name="home_qibla_compass">Qibla Compass</string>
+    <string name="home_salah_tracker">Salah Tracker</string>
+    <string name="home_al_quran">Al-Quran</string>
+    <string name="home_al_hadith">Al-Hadith</string>
+
+    <!-- Prayer Names -->
+    <string name="prayer_fajr">Fajr</string>
+    <string name="prayer_sunrise">Sunrise</string>
+    <string name="prayer_dhuhr">Dhuhr</string>
+    <string name="prayer_asr">Asr</string>
+    <string name="prayer_maghrib">Maghrib</string>
+    <string name="prayer_isha">Isha</string>
+
+    <!-- Prayers Timing Screen -->
+    <string name="prayers_screen_title">Prayer Timings</string>
+    <string name="prayers_calculation_method">Calculation Method</string>
+    <string name="prayers_asr_juristic">Asr Calculation (Juristic)</string>
+    <string name="prayers_auto_detected_badge">Auto-detected for your region</string>
+    <string name="prayers_custom_selected_badge">Custom Selection</string>
+    <string name="prayers_change_method">Change</string>
+    <string name="prayers_reset_auto_detect">Auto-detect by Location</string>
+    <string name="prayers_select_calculation_method">Select Calculation Method</string>
+    <string name="prayers_select_asr_method">Select Asr Juristic Method</string>
+    <string name="prayers_asr_standard">Standard (Shafi\'i, Maliki, Hanbali — 1x shadow)</string>
+    <string name="prayers_asr_hanafi">Hanafi (2x shadow length)</string>
+    <string name="prayers_alarm_mode_silent">Silent</string>
+    <string name="prayers_alarm_mode_vibrate">Vibrate</string>
+    <string name="prayers_alarm_mode_beep">Beep</string>
+    <string name="prayers_alarm_mode_azan">Full Azan</string>
+    <string name="prayers_sun_progression">Sun Progression</string>
+
+    <!-- Qibla Compass Screen -->
+    <string name="compass_screen_title">Qibla Direction</string>
+    <string name="compass_kaaba_aligned">FACING THE KAABA</string>
+    <string name="compass_turn_right">Turn Right %1$d°</string>
+    <string name="compass_turn_left">Turn Left %1$d°</string>
+    <string name="compass_aligned_exact">Aligned with Qibla!</string>
+    <string name="compass_qibla_bearing_label">QIBLA ANGLE</string>
+    <string name="compass_device_heading_label">HEADING</string>
+    <string name="compass_distance_kaaba_label">DISTANCE TO MAKKAH</string>
+    <string name="compass_distance_km_format">%1$,d km</string>
+    <string name="compass_calibration_needed">Sensor calibration recommended: move phone in a figure-8 pattern.</string>
+    <string name="compass_sensor_unavailable">Compass sensor unavailable on this device. Showing static Qibla bearing from True North.</string>
+    <string name="compass_keep_flat_hint">Hold your device flat and away from magnetic interference for highest accuracy.</string>
+
+    <!-- Quran Screen & Reader -->
+    <string name="quran_screen_title">The Noble Quran</string>
+    <string name="quran_title">Holy Quran (القرآن الكريم)</string>
+    <string name="quran_settings">Quran Settings</string>
+    <string name="quran_tab_surah">Surah</string>
+    <string name="quran_tab_surahs">Surahs (%1$d)</string>
+    <string name="quran_tab_juz">Juz (30)</string>
+    <string name="quran_tab_favorites">Favorites (%1$d)</string>
+    <string name="quran_tab_bookmarks">Bookmarks (%1$d)</string>
+    <string name="quran_search_hint">Search Surah, Juz, or Ayah…</string>
+    <string name="quran_search_placeholder">Search Surah by name, translation, or number…</string>
+    <string name="quran_loading_surahs">Loading Holy Quran Surahs…</string>
+    <string name="quran_failed_load_surahs">Failed to load Surahs</string>
+    <string name="quran_no_favorites_title">No Favorite Surahs Saved</string>
+    <string name="quran_no_favorites_desc">Tap the heart on any Surah to save it here</string>
+    <string name="quran_no_bookmarks_title">No Ayah Bookmarks Yet</string>
+    <string name="quran_no_bookmarks_desc">Tap the bookmark icon on any Ayah card to resume reading later</string>
+    <string name="ayah_copied">Ayah copied to clipboard</string>
+    <string name="share_ayah_via">Share Ayah via</string>
+    <string name="quran_last_read">LAST READ</string>
+    <string name="quran_continue_reading">Continue</string>
+    <string name="quran_verses_count_format">%1$d Verses</string>
+    <string name="quran_juz_number_format">Juz %1$d</string>
+    <string name="quran_surah_number_format">Surah %1$d</string>
+    <string name="quran_bismillah_arabic">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</string>
+    <string name="quran_new_surah_started">SURAH %1$d • %2$s</string>
+    <string name="quran_new_juz_started">JUZ %1$d • %2$s</string>
+    <string name="quran_colored_tajweed">Tajweed Colors</string>
+    <string name="quran_tajweed_guide">Tajweed Color Guide</string>
+    <string name="quran_tajweed_ghunnah">Ghunnah (Nasalization)</string>
+    <string name="quran_tajweed_ikhfa">Ikhfa (Hiding)</string>
+    <string name="quran_tajweed_idgham">Idgham (Merging)</string>
+    <string name="quran_tajweed_iqlab">Iqlab (Conversion)</string>
+    <string name="quran_tajweed_qalqalah">Qalqalah (Echo)</string>
+    <string name="quran_tajweed_madd">Madd (Elongation)</string>
+    <string name="quran_tajweed_waqf">Waqf / Pause Marks</string>
+    <string name="quran_select_qari_download_title">Select Qari Voice for Download</string>
+    <string name="quran_select_qari_download_subtitle">Choose your preferred reciter to download %1$s for offline listening:</string>
+    <string name="quran_download_start">Download Audio</string>
+    <string name="quran_downloaded_badge">Downloaded</string>
+    <string name="quran_downloading_format">Downloading %1$d%%</string>
+    <string name="quran_select_reciter_title">Select Reciter (Qari)</string>
+    <string name="quran_font_settings">Quran Script &amp; Font</string>
+    <string name="quran_translation_language">Translation Language</string>
+    <string name="quran_no_bookmarks">No bookmarked verses yet.</string>
+    <string name="quran_tafseer_title">Tafseer &amp; Commentary</string>
+
+    <!-- Hadith Screen -->
+    <string name="hadith_screen_title">Prophetic Hadiths</string>
+    <string name="hadith_title">Authentic Hadiths (الحديث النبوي)</string>
+    <string name="hadith_books_subtitle">Authentic Collections of Sunnah (Kutub al-Sittah)</string>
+    <string name="hadith_select_book_title">The Six Canonical Hadith Books</string>
+    <string name="hadith_select_book_subtitle">Select a Hadith collection below to browse its chapters and narrations</string>
+    <string name="hadith_open_book">Open Book</string>
+    <string name="hadith_all_books">All Books</string>
+    <string name="hadith_search_hint">Search Hadith, narrator, or topic…</string>
+    <string name="hadith_search_placeholder">Search Hadith text, chapter, or narrator…</string>
+    <string name="hadith_loading">Fetching authentic Hadith collection…</string>
+    <string name="hadith_failed_load">Failed to fetch Hadiths</string>
+    <string name="hadith_chapters_count">%1$d Chapters</string>
+    <string name="hadith_chapters_count_format">%1$d Chapters</string>
+    <string name="hadith_hadiths_count_format">%1$d Hadiths</string>
+    <string name="hadith_book_number_format">Book %1$s • Hadith %2$s</string>
+    <string name="hadith_grade_sahih">Sahih (Authentic)</string>
+    <string name="hadith_read_full">Read Full Hadith</string>
+    <string name="hadith_copied">Hadith copied to clipboard</string>
+    <string name="share_hadith_via">Share Hadith via</string>
+
+    <!-- Ibadat / Duas / Tasbih Screen -->
+    <string name="ibadat_screen_title">Ibadat &amp; Supplications</string>
+    <string name="ibadat_title">Ibadat &amp; Remembrance (الأذكار والعبادات)</string>
+    <string name="ibadat_tab_duas">Fortress of the Muslim (Duas)</string>
+    <string name="ibadat_tab_tasbih">Digital Tasbih</string>
+    <string name="duas_categories_title">Dua Categories</string>
+    <string name="duas_categories_subtitle">Select a category to read authentic supplications from Quran &amp; Sunnah</string>
+    <string name="duas_select_category_title">Fortress of the Muslim (حصن المسلم)</string>
+    <string name="duas_select_category_subtitle">Open any Dua category below to read authentic Quranic &amp; Prophetic supplications</string>
+    <string name="duas_all_categories">Categories</string>
+    <string name="duas_all_categories_card_title">All Fortress Duas</string>
+    <string name="duas_open_category">Read Duas</string>
+    <string name="duas_count_badge">%1$d Duas</string>
+    <string name="duas_count_format">%1$d Duas</string>
+    <string name="duas_bookmarks_category">Saved / Bookmarked Duas</string>
+    <string name="duas_search_hint">Search Duas by title, Arabic, or translation…</string>
+    <string name="duas_search_placeholder">Search Duas in this category…</string>
+    <string name="duas_loading">Loading Fortress of the Muslim Duas…</string>
+    <string name="duas_transliteration_label">TRANSLITERATION</string>
+    <string name="duas_translation_label">TRANSLATION</string>
+    <string name="duas_reference_label">Reference: %1$s</string>
+    <string name="dua_copied">Dua copied to clipboard</string>
+    <string name="share_dua_via">Share Dua via</string>
+
+    <!-- More / Settings Screen -->
+    <string name="more_screen_title">Settings &amp; More</string>
+    <string name="more_prayer_settings_section">Prayer Calculation Settings</string>
+    <string name="more_typography_section">Arabic Typography &amp; Fonts</string>
+    <string name="more_arabic_font_label">Arabic Script Font</string>
+    <string name="more_hijri_adjustment_label">Hijri Date Adjustment</string>
+    <string name="more_notifications_label">Prayer Notifications</string>
+
+    <!-- Calendar & Salah Tracker -->
+    <string name="calendar_screen_title">Islamic Hijri Calendar</string>
+    <string name="calendar_upcoming_events">Upcoming Islamic Events</string>
+    <string name="tracker_screen_title">Salah Tracker</string>
+    <string name="tracker_weekly_progress">Weekly Prayer Consistency</string>
+
+    <!-- Alarm Screen -->
+    <string name="alarm_dismiss">Dismiss</string>
+    <string name="alarm_snooze">Snooze (5 min)</string>
+    <string name="alarm_hayya_alas_salah">Hayya \'alas-Salah • Come to Prayer</string>
 </resources>

@@ -40,18 +40,29 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ne.muslimprayers.qiblafinder.core.theme.ArabicFontManager
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchreLight
 import com.ne.muslimprayers.qiblafinder.core.theme.DividerColor
@@ -60,6 +71,7 @@ import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSageLight
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
+import com.ne.muslimprayers.qiblafinder.core.theme.UrduTranslationFontFamily
 import com.ne.muslimprayers.qiblafinder.core.theme.WarmParchment
 import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
@@ -99,6 +111,8 @@ fun QuranSettingsSheetContent(
     onToggleAutoScroll: () -> Unit = {},
     onSetReciter: (String) -> Unit,
     onAdjustFontSize: (Float) -> Unit,
+    onSetArabicFontSize: (Float) -> Unit = {},
+    onSetTranslationFontSize: (Float) -> Unit = {},
     onDismiss: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -417,7 +431,7 @@ fun QuranSettingsSheetContent(
             }
         }
 
-        // Section 3: Arabic Calligraphy Font Size
+        // Section 3: Verse & Translation Font Size Sliders with Live Bismillah Sample
         item {
             Column(
                 modifier = Modifier
@@ -427,6 +441,7 @@ fun QuranSettingsSheetContent(
                     .border(0.8.sdp, DividerColor, RoundedCornerShape(16.sdp))
                     .padding(14.sdp)
             ) {
+                // 1. Arabic Verse Size Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -443,7 +458,7 @@ fun QuranSettingsSheetContent(
                             modifier = Modifier.size(18.sdp)
                         )
                         AppText.BodyMedium(
-                            text = "Arabic Font Size",
+                            text = "Verse (Arabic) Font Size",
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary
                         )
@@ -464,44 +479,183 @@ fun QuranSettingsSheetContent(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.sdp))
+                Spacer(modifier = Modifier.height(6.sdp))
 
+                // Slider for Arabic Verse Size
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.sdp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.TextDecrease,
+                        contentDescription = "Smaller Verse Text",
+                        tint = TextSecondary,
+                        modifier = Modifier
+                            .size(18.sdp)
+                            .clickable { onSetArabicFontSize(state.arabicFontSize - 1f) }
+                    )
+                    Slider(
+                        value = state.arabicFontSize,
+                        onValueChange = { onSetArabicFontSize(it) },
+                        valueRange = 18f..44f,
+                        modifier = Modifier.weight(1f),
+                        colors = SliderDefaults.colors(
+                            thumbColor = DesertOchre,
+                            activeTrackColor = DesertOchre,
+                            inactiveTrackColor = DesertOchreLight
+                        )
+                    )
+                    Icon(
+                        imageVector = Icons.Default.TextIncrease,
+                        contentDescription = "Larger Verse Text",
+                        tint = DesertOchre,
+                        modifier = Modifier
+                            .size(20.sdp)
+                            .clickable { onSetArabicFontSize(state.arabicFontSize + 1f) }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(6.sdp))
+
+                // Live Sample Bismillah Preview Card that dynamically scales with the slider & selected font
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.sdp))
+                        .background(WarmParchment.copy(alpha = 0.7f))
+                        .border(0.8.dp, DesertOchre.copy(alpha = 0.35f), RoundedCornerShape(12.sdp))
+                        .padding(horizontal = 12.sdp, vertical = 10.sdp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AppText.ArabicText(
+                        text = "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ",
+                        fontSize = state.arabicFontSize.sp,
+                        color = TextPrimary,
+                        textAlign = TextAlign.Center,
+                        fontKeyOverride = state.selectedQuranFont,
+                        applySafePadding = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(14.sdp))
+                HorizontalDivider(color = DividerColor.copy(alpha = 0.6f), thickness = 0.8.dp)
+                Spacer(modifier = Modifier.height(14.sdp))
+
+                // 2. Translation Font Size Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Surface(
-                        onClick = { onAdjustFontSize(-2f) },
-                        shape = RoundedCornerShape(10.sdp),
-                        color = WarmParchment,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, DividerColor)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.sdp)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.sdp, vertical = 8.sdp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.sdp)
-                        ) {
-                            Icon(Icons.Default.TextDecrease, contentDescription = "Smaller", tint = TextPrimary)
-                            Text("Smaller", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
-                        }
+                        Icon(
+                            imageVector = Icons.Default.Translate,
+                            contentDescription = null,
+                            tint = MedinaSage,
+                            modifier = Modifier.size(18.sdp)
+                        )
+                        AppText.BodyMedium(
+                            text = "Translation Font Size",
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
                     }
 
+                    // Translation Size Badge
                     Surface(
-                        onClick = { onAdjustFontSize(2f) },
-                        shape = RoundedCornerShape(10.sdp),
-                        color = WarmParchment,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, DividerColor)
+                        color = MedinaSageLight,
+                        shape = RoundedCornerShape(6.sdp)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.sdp, vertical = 8.sdp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.sdp)
-                        ) {
-                            Icon(Icons.Default.TextIncrease, contentDescription = "Larger", tint = TextPrimary)
-                            Text("Larger", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
-                        }
+                        Text(
+                            text = "${state.translationFontSize.toInt()} sp",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MedinaSage,
+                            modifier = Modifier.padding(horizontal = 8.sdp, vertical = 2.sdp)
+                        )
                     }
+                }
+
+                Spacer(modifier = Modifier.height(6.sdp))
+
+                // Second Slider for Translation Size
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.sdp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.TextDecrease,
+                        contentDescription = "Smaller Translation Text",
+                        tint = TextSecondary,
+                        modifier = Modifier
+                            .size(18.sdp)
+                            .clickable { onSetTranslationFontSize(state.translationFontSize - 1f) }
+                    )
+                    Slider(
+                        value = state.translationFontSize,
+                        onValueChange = { onSetTranslationFontSize(it) },
+                        valueRange = 12f..26f,
+                        modifier = Modifier.weight(1f),
+                        colors = SliderDefaults.colors(
+                            thumbColor = MedinaSage,
+                            activeTrackColor = MedinaSage,
+                            inactiveTrackColor = MedinaSageLight
+                        )
+                    )
+                    Icon(
+                        imageVector = Icons.Default.TextIncrease,
+                        contentDescription = "Larger Translation Text",
+                        tint = MedinaSage,
+                        modifier = Modifier
+                            .size(20.sdp)
+                            .clickable { onSetTranslationFontSize(state.translationFontSize + 1f) }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(6.sdp))
+
+                // Live Sample Translation Preview (Urdu + English) scaling with translationFontSize
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.sdp))
+                        .background(WarmParchment.copy(alpha = 0.55f))
+                        .border(0.8.dp, MedinaSage.copy(alpha = 0.25f), RoundedCornerShape(12.sdp))
+                        .padding(horizontal = 12.sdp, vertical = 10.sdp),
+                    verticalArrangement = Arrangement.spacedBy(6.sdp)
+                ) {
+                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                        Text(
+                            text = "شروع اللہ کے نام سے جو بڑا مہربان نہایت رحم والا ہے",
+                            style = TextStyle(
+                                fontFamily = UrduTranslationFontFamily,
+                                fontSize = (state.translationFontSize * 1.15f).sp,
+                                lineHeight = (state.translationFontSize * 2.15f).sp,
+                                color = TextPrimary,
+                                textAlign = TextAlign.Start,
+                                textDirection = TextDirection.Rtl,
+                                platformStyle = PlatformTextStyle(includeFontPadding = true),
+                                lineHeightStyle = LineHeightStyle(
+                                    alignment = LineHeightStyle.Alignment.Center,
+                                    trim = LineHeightStyle.Trim.None
+                                )
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    Text(
+                        text = "In the name of Allah, the Entirely Merciful, the Especially Merciful.",
+                        fontSize = state.translationFontSize.sp,
+                        lineHeight = (state.translationFontSize * 1.45f).sp,
+                        color = TextSecondary,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         }
@@ -706,10 +860,12 @@ fun QuranSettingsSheetContent(
 
                 Spacer(modifier = Modifier.height(10.sdp))
 
-                // If currently inside a Surah, offer quick download / status
+                // If currently inside a Surah or Juz, offer quick download / status
                 if (state.selectedSurah != null) {
                     val surah = state.selectedSurah
-                    val isDownloadingThis = state.downloadStatus.isDownloading && state.downloadStatus.targetKey == "surah_${surah.number}"
+                    val isJuz = state.selectedJuz != null
+                    val targetKey = if (isJuz) "juz_${state.selectedJuz!!.number}" else "surah_${surah.number}"
+                    val isDownloadingThis = state.downloadStatus.isDownloading && state.downloadStatus.targetKey == targetKey
 
                     Surface(
                         color = WarmParchment,
@@ -725,7 +881,7 @@ fun QuranSettingsSheetContent(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Surah ${surah.name} Audio",
+                                    text = if (isJuz) "Juz ${state.selectedJuz!!.number} (${state.selectedJuz.englishName}) Audio" else "Surah ${surah.name} Audio",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = TextPrimary
@@ -733,7 +889,7 @@ fun QuranSettingsSheetContent(
                                 Text(
                                     text = if (state.isCurrentSurahDownloaded) "Downloaded for offline recitation"
                                     else if (isDownloadingThis) "Downloading: ${state.downloadStatus.progressPercentage}%"
-                                    else "${surah.totalVerses} Ayahs available to download",
+                                    else "${state.verses.size.takeIf { it > 0 } ?: surah.totalVerses} Ayahs available to download",
                                     fontSize = 10.sp,
                                     color = TextSecondary
                                 )

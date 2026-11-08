@@ -25,15 +25,16 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
+import com.ne.muslimprayers.qiblafinder.R
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.domain.model.Hadith
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 
@@ -52,27 +53,30 @@ fun HadithDetailDialog(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
                 .fillMaxHeight(0.85f)
-                .clip(RoundedCornerShape(24.sdp)),
+                .clip(RoundedCornerShape(AppDimensions.cornerExtraLarge)),
             color = MaterialTheme.colorScheme.surface
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(20.sdp)
+                    .padding(AppDimensions.dialogPadding)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
                         Icon(
                             imageVector = Icons.Default.AutoStories,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.sdp)
+                            modifier = Modifier.size(AppDimensions.iconLarge)
                         )
-                        Spacer(modifier = Modifier.width(8.sdp))
+                        Spacer(modifier = Modifier.width(AppDimensions.paddingSmall))
                         AppText.HeadingLarge(
                             text = hadith.source,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -83,13 +87,13 @@ fun HadithDetailDialog(
                     IconButton(onClick = onDismiss) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Close",
+                            contentDescription = stringResource(R.string.close),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingSmall))
 
                 Column(
                     modifier = Modifier
@@ -103,7 +107,7 @@ fun HadithDetailDialog(
                     )
 
                     if (hadith.arabicText.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(10.sdp))
+                        Spacer(modifier = Modifier.height(AppDimensions.paddingSmall))
                         AppText.ArabicText(
                             text = hadith.arabicText,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -111,7 +115,7 @@ fun HadithDetailDialog(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(10.sdp))
+                    Spacer(modifier = Modifier.height(AppDimensions.paddingSmall))
 
                     AppText.BodyLarge(
                         text = hadith.englishText,
@@ -119,31 +123,45 @@ fun HadithDetailDialog(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingMedium))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.sdp)
+                    horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingSmall)
                 ) {
                     OutlinedButton(
                         onClick = onCopy,
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.sdp)
+                        shape = RoundedCornerShape(AppDimensions.cornerMedium)
                     ) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.sdp))
-                        Spacer(modifier = Modifier.width(6.sdp))
-                        Text("Copy")
+                        Icon(
+                            Icons.Default.ContentCopy,
+                            contentDescription = null,
+                            modifier = Modifier.size(AppDimensions.iconMedium)
+                        )
+                        Spacer(modifier = Modifier.width(AppDimensions.paddingTiny))
+                        AppText.ButtonText(
+                            text = stringResource(R.string.copy),
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
 
                     Button(
                         onClick = onShare,
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.sdp),
+                        shape = RoundedCornerShape(AppDimensions.cornerMedium),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
-                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.sdp))
-                        Spacer(modifier = Modifier.width(6.sdp))
-                        Text("Share")
+                        Icon(
+                            Icons.Default.Share,
+                            contentDescription = null,
+                            modifier = Modifier.size(AppDimensions.iconMedium)
+                        )
+                        Spacer(modifier = Modifier.width(AppDimensions.paddingTiny))
+                        AppText.ButtonText(
+                            text = stringResource(R.string.share),
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
                     }
                 }
             }

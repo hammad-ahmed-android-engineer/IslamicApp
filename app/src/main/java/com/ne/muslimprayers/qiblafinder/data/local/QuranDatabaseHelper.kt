@@ -173,7 +173,8 @@ class QuranDatabaseHelper @Inject constructor(
                             urduText = textUr,
                             juz = juz,
                             audioUrl = QuranSurahUtils.getAudioUrl("ar.alafasy", sNum, vNum),
-                            globalAyahNumber = globalId
+                            globalAyahNumber = globalId,
+                            surahNumber = sNum
                         )
                     )
                 }
@@ -218,7 +219,8 @@ class QuranDatabaseHelper @Inject constructor(
                             urduText = textUr,
                             juz = juz,
                             audioUrl = QuranSurahUtils.getAudioUrl("ar.alafasy", sNum, vNum),
-                            globalAyahNumber = globalId
+                            globalAyahNumber = globalId,
+                            surahNumber = sNum
                         )
                     )
                 }

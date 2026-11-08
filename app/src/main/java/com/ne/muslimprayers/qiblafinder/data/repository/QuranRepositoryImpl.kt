@@ -64,7 +64,8 @@ class QuranRepositoryImpl @Inject constructor(
                         urduText = cleanUrdu,
                         juz = v.juzNumber ?: 1,
                         audioUrl = "https://cdn.islamic.network/quran/audio/128/ar.alafasy/${v.id}.mp3",
-                        globalAyahNumber = v.id
+                        globalAyahNumber = v.id,
+                        surahNumber = surahNumber
                     )
                 }
                 emit(Resource.Success(verses))
@@ -88,7 +89,8 @@ class QuranRepositoryImpl @Inject constructor(
                     englishText = engText,
                     juz = arabicAyah.juz,
                     audioUrl = "https://cdn.islamic.network/quran/audio/128/ar.alafasy/${arabicAyah.number}.mp3",
-                    globalAyahNumber = arabicAyah.number
+                    globalAyahNumber = arabicAyah.number,
+                    surahNumber = surahNumber
                 )
             }
             emit(Resource.Success(combined))

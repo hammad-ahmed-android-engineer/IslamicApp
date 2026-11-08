@@ -19,8 +19,10 @@ data class IbadatUiState(
     val allDuas: List<DuaItem> = emptyList(),
     val filteredDuas: List<DuaItem> = emptyList(),
     val selectedCategory: String = "All",
+    val isCategoryOpened: Boolean = false,
     val searchQuery: String = "",
     val categories: List<String> = emptyList(),
+    val categoryCounts: Map<String, Int> = emptyMap(),
     val selectedTab: Int = 0, // 0 = Tasbih, 1 = Duas
     val isLoading: Boolean = false,
     val errorMessage: String? = null
@@ -33,7 +35,6 @@ class IbadatViewModel @Inject constructor(
 
     companion object {
         val PREFERRED_CATEGORY_ORDER = listOf(
-            "All",
             "Quranic (Rabbana)",
             "Morning & Evening",
             "Prayer & Mosque",
@@ -46,7 +47,8 @@ class IbadatViewModel @Inject constructor(
             "Praise & Remembrance",
             "Family & Society",
             "Nature & Weather",
-            "Death & Afterlife"
+            "Death & Afterlife",
+            "All"
         )
     }
 
@@ -70,12 +72,19 @@ class IbadatViewModel @Inject constructor(
                         val orderedCats = PREFERRED_CATEGORY_ORDER.filter { it == "All" || it in distinctCats } +
                                 distinctCats.filter { it !in PREFERRED_CATEGORY_ORDER }
 
+                        val counts = mutableMapOf<String, Int>()
+                        counts["All"] = list.size
+                        for (cat in distinctCats) {
+                            counts[cat] = list.count { it.category.equals(cat, ignoreCase = true) }
+                        }
+
                         _uiState.update { state ->
                             state.copy(
                                 isLoading = false,
                                 allDuas = list,
                                 filteredDuas = applyFilter(list, state.selectedCategory, state.searchQuery),
                                 categories = orderedCats,
+                                categoryCounts = counts,
                                 errorMessage = null
                             )
                         }
@@ -110,7 +119,19 @@ class IbadatViewModel @Inject constructor(
         _uiState.update { state ->
             state.copy(
                 selectedCategory = category,
-                filteredDuas = applyFilter(state.allDuas, category, state.searchQuery)
+                isCategoryOpened = true,
+                searchQuery = "",
+                filteredDuas = applyFilter(state.allDuas, category, "")
+            )
+        }
+    }
+
+    fun closeCategory() {
+        _uiState.update { state ->
+            state.copy(
+                isCategoryOpened = false,
+                searchQuery = "",
+                filteredDuas = applyFilter(state.allDuas, state.selectedCategory, "")
             )
         }
     }

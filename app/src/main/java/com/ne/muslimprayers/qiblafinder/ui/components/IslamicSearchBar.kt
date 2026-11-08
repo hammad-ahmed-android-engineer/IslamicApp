@@ -17,28 +17,22 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
+import com.ne.muslimprayers.qiblafinder.core.theme.AppTypography
 import com.ne.muslimprayers.qiblafinder.core.theme.DividerColor
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 
 /**
- * Compact, unified search bar component for Islamic App screens.
- * Designed with a slim profile (38.sdp) and single-line ellipsis to prevent
- * vertical stretching and maintain a clean, elegant layout.
+ * Compact, unified search bar component for Islamic App screens using [AppDimensions] and [AppTypography].
  */
 @Composable
 fun IslamicSearchBar(
@@ -52,39 +46,35 @@ fun IslamicSearchBar(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .height(38.sdp),
-        shape = RoundedCornerShape(12.sdp),
+            .height(AppDimensions.buttonSmallHeight),
+        shape = RoundedCornerShape(AppDimensions.cornerMedium),
         color = PureAlabaster,
-        border = BorderStroke(1.dp, DividerColor)
+        border = BorderStroke(AppDimensions.borderWidthThin, DividerColor)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 10.sdp),
+                .padding(horizontal = AppDimensions.paddingSmall),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = leadingIcon,
                 contentDescription = "Search",
                 tint = MedinaSage,
-                modifier = Modifier.size(18.sdp)
+                modifier = Modifier.size(AppDimensions.iconMedium)
             )
 
-            Spacer(modifier = Modifier.width(8.sdp))
+            Spacer(modifier = Modifier.width(AppDimensions.paddingSmall))
 
             Box(
                 modifier = Modifier.weight(1f),
                 contentAlignment = Alignment.CenterStart
             ) {
                 if (query.isEmpty()) {
-                    Text(
+                    AppText.BodySmall(
                         text = placeholder,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontSize = 12.5.sp,
-                            color = TextSecondary
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        color = TextSecondary,
+                        maxLines = 1
                     )
                 }
                 BasicTextField(
@@ -92,8 +82,7 @@ fun IslamicSearchBar(
                     onValueChange = onQueryChange,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(
-                        fontSize = 13.sp,
+                    textStyle = AppTypography.BodyMedium.copy(
                         color = TextPrimary
                     ),
                     cursorBrush = SolidColor(MedinaSage)
@@ -103,13 +92,13 @@ fun IslamicSearchBar(
             if (query.isNotEmpty()) {
                 IconButton(
                     onClick = onClear,
-                    modifier = Modifier.size(24.sdp)
+                    modifier = Modifier.size(AppDimensions.iconLarge)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Clear,
                         contentDescription = "Clear search",
                         tint = TextSecondary,
-                        modifier = Modifier.size(16.sdp)
+                        modifier = Modifier.size(AppDimensions.iconSmall)
                     )
                 }
             }
