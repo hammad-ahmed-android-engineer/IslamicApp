@@ -16,8 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.WarmParchment
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.ui.components.IslamicTopAppBar
 import com.ne.muslimprayers.qiblafinder.ui.salahtracker.components.PrayerChecklistSection
 import com.ne.muslimprayers.qiblafinder.ui.salahtracker.components.WeeklyDayStrip
@@ -49,14 +49,14 @@ fun SalahTrackerScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(horizontal = 16.sdp, vertical = 8.sdp),
-                horizontalArrangement = Arrangement.spacedBy(16.sdp)
+                    .padding(horizontal = AppDimensions.paddingMedium, vertical = AppDimensions.paddingSmall),
+                horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingMedium)
             ) {
                 // Left Column: Weekly Navigation, Day Strip & Progress Summary
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(bottom = 24.sdp),
-                    verticalArrangement = Arrangement.spacedBy(12.sdp)
+                    contentPadding = PaddingValues(bottom = AppDimensions.paddingLarge),
+                    verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingMediumSmall)
                 ) {
                     item {
                         WeeklyNavigationHeader(
@@ -88,8 +88,8 @@ fun SalahTrackerScreen(
                 // Right Column: Prayers Checklist with checkboxes
                 LazyColumn(
                     modifier = Modifier.weight(1.1f),
-                    contentPadding = PaddingValues(bottom = 24.sdp),
-                    verticalArrangement = Arrangement.spacedBy(12.sdp)
+                    contentPadding = PaddingValues(bottom = AppDimensions.paddingLarge),
+                    verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingMediumSmall)
                 ) {
                     item {
                         PrayerChecklistSection(
@@ -109,9 +109,9 @@ fun SalahTrackerScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(horizontal = 16.sdp),
-                contentPadding = PaddingValues(top = 8.sdp, bottom = 32.sdp),
-                verticalArrangement = Arrangement.spacedBy(12.sdp)
+                    .padding(horizontal = AppDimensions.paddingMedium),
+                contentPadding = PaddingValues(top = AppDimensions.paddingSmall, bottom = AppDimensions.paddingExtraLarge),
+                verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingMediumSmall)
             ) {
                 item {
                     WeeklyNavigationHeader(

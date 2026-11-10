@@ -5,6 +5,7 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.util.Log
 import com.ne.muslimprayers.qiblafinder.domain.model.Ayah
+import com.ne.muslimprayers.qiblafinder.domain.model.JuzStartBoundary
 import com.ne.muslimprayers.qiblafinder.domain.model.Surah
 import com.ne.muslimprayers.qiblafinder.ui.quran.util.QuranStaticData
 import com.ne.muslimprayers.qiblafinder.ui.quran.util.QuranSurahUtils
@@ -229,6 +230,46 @@ class QuranDatabaseHelper @Inject constructor(
         } catch (e: Exception) {
             Log.e(tag, "Error reading Ayahs for Juz $juzNumber: ${e.message}")
             emptyList()
+        }
+    }
+
+    /**
+     * Queries the first Ayah of each Juz (1..30) directly from the Quran database so callers know
+     * dynamically whether each Juz begins a new Surah (Ayah 1) or continues a Surah from the
+     * previous Juz (Ayah > 1).
+     */
+    suspend fun getJuzStartBoundaries(): Map<Int, JuzStartBoundary> = withContext(Dispatchers.IO) {
+        try {
+            val db = getReadableDb()
+            val boundaries = mutableMapOf<Int, JuzStartBoundary>()
+            val cursor: Cursor = db.rawQuery(
+                """
+                SELECT a.juz_number, a.surah_number, a.number_in_surah, c.cnt
+                FROM ayahs a
+                JOIN (
+                    SELECT juz_number, MIN(id) AS min_id, COUNT(*) AS cnt
+                    FROM ayahs
+                    GROUP BY juz_number
+                ) c ON a.id = c.min_id
+                ORDER BY a.juz_number ASC
+                """.trimIndent(),
+                null
+            )
+            cursor.use {
+                while (it.moveToNext()) {
+                    val juzNum = it.getInt(0)
+                    boundaries[juzNum] = JuzStartBoundary(
+                        juzNumber = juzNum,
+                        startingSurahNumber = it.getInt(1),
+                        startingAyahNumber = it.getInt(2),
+                        totalVerses = it.getInt(3)
+                    )
+                }
+            }
+            boundaries
+        } catch (e: Exception) {
+            Log.e(tag, "Error reading Juz start boundaries: ${e.message}")
+            emptyMap()
         }
     }
 }

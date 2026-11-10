@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,14 +24,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.Dp
+import com.ne.muslimprayers.qiblafinder.R
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
-import com.ne.muslimprayers.qiblafinder.core.theme.ssp
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 
 @Composable
@@ -42,10 +42,10 @@ fun TasbihCounterBead(
     arabicPhrase: String,
     scale: Float,
     onTap: () -> Unit,
-    size: Int
+    size: Dp = AppDimensions.compassDialSize
 ) {
     val sweepAngle = if (target > 0) (count.toFloat() / target.toFloat()) * 360f else 0f
-    val strokeWidthPx = with(LocalDensity.current) { 5.sdp.toPx() }
+    val strokeWidthPx = with(LocalDensity.current) { AppDimensions.borderWidthBold.toPx() }
 
     // 3D Pearl Sphere Gradients
     val pearlGradient = Brush.radialGradient(
@@ -59,12 +59,12 @@ fun TasbihCounterBead(
 
     Box(
         modifier = Modifier
-            .size(size.sdp)
+            .size(size)
             .scale(scale)
-            .shadow(18.sdp, CircleShape, ambientColor = Color(0x33C88A32), spotColor = Color(0x40C88A32))
+            .shadow(AppDimensions.paddingMediumLarge, CircleShape, ambientColor = Color(0x33C88A32), spotColor = Color(0x40C88A32))
             .clip(CircleShape)
             .background(pearlGradient)
-            .border(4.sdp, DesertOchre, CircleShape)
+            .border(AppDimensions.borderWidthBold, DesertOchre, CircleShape)
             .clickable { onTap() },
         contentAlignment = Alignment.Center
     ) {
@@ -81,22 +81,22 @@ fun TasbihCounterBead(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(16.sdp)
+            modifier = Modifier.padding(AppDimensions.paddingMedium)
         ) {
             AppText.ArabicText(
                 text = arabicPhrase.ifBlank { "سُبْحَانَ اللَّهِ" },
                 color = TextPrimary,
-                fontSize = 20.sp,
+                fontSize = AppDimensions.textHeadingMedium,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 maxLines = 1
             )
 
-            Spacer(modifier = Modifier.height(8.sdp))
+            Spacer(modifier = Modifier.height(AppDimensions.paddingSmall))
 
-            Text(
+            AppText.DisplayLarge(
                 text = "$count",
-                fontSize = 46.ssp,
+                fontSizeOverride = AppDimensions.textHeroCounter,
                 fontWeight = FontWeight.ExtraBold,
                 color = TextPrimary
             )
@@ -107,10 +107,10 @@ fun TasbihCounterBead(
                 fontWeight = FontWeight.Bold
             )
 
-            Spacer(modifier = Modifier.height(6.sdp))
+            Spacer(modifier = Modifier.height(AppDimensions.paddingExtraSmall))
 
             AppText.Caption(
-                text = "TAP TO COUNT",
+                text = stringResource(R.string.tasbih_tap_to_count),
                 color = TextSecondary,
                 fontWeight = FontWeight.Bold
             )

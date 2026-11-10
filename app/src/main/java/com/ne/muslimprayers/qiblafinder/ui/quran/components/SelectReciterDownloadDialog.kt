@@ -47,7 +47,6 @@ import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
 import com.ne.muslimprayers.qiblafinder.core.theme.WarmParchment
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.core.utils.clickableDebounced
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 import com.ne.muslimprayers.qiblafinder.ui.quran.AVAILABLE_RECITERS
@@ -111,7 +110,7 @@ fun SelectReciterDownloadDialog(
 
                 Column(
                     modifier = Modifier
-                        .heightIn(max = 290.sdp)
+                        .heightIn(max = AppDimensions.dialogContentMaxHeightExpanded)
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingSmall)
                 ) {

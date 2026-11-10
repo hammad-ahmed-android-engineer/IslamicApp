@@ -1,12 +1,6 @@
 package com.ne.muslimprayers.qiblafinder.ui.home.components
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import com.ne.muslimprayers.qiblafinder.core.utils.clickableDebounced
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,14 +17,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 import com.ne.muslimprayers.qiblafinder.core.theme.DividerColor
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
@@ -38,8 +30,8 @@ import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSageLight
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
+import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
 
 @Composable
 fun HomeScreenHeader(
@@ -47,19 +39,18 @@ fun HomeScreenHeader(
     onRefreshLocation: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.sdp))
-            .border(1.sdp, DividerColor, RoundedCornerShape(20.sdp)),
-        shape = RoundedCornerShape(20.sdp),
-        color = PureAlabaster,
-        tonalElevation = 2.sdp
+    IslamicCard(
+        modifier = modifier.fillMaxWidth(),
+        backgroundColor = PureAlabaster,
+        borderColor = DividerColor,
+        cornerRadius = AppDimensions.cornerExtraLarge,
+        elevation = AppDimensions.elevationLow,
+        contentPadding = AppDimensions.paddingZero
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.sdp, vertical = 12.sdp),
+                .padding(horizontal = AppDimensions.paddingMedium, vertical = AppDimensions.paddingMediumSmall),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -70,12 +61,12 @@ fun HomeScreenHeader(
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
                     )
-                    Spacer(modifier = Modifier.width(6.sdp))
+                    Spacer(modifier = Modifier.width(AppDimensions.paddingExtraSmall))
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.sdp))
+                            .clip(RoundedCornerShape(AppDimensions.cornerSmall))
                             .background(MedinaSageLight)
-                            .padding(horizontal = 6.sdp, vertical = 2.sdp)
+                            .padding(horizontal = AppDimensions.paddingExtraSmall, vertical = AppDimensions.paddingMicro)
                     ) {
                         AppText.Caption(
                             text = "السلام عليكم",
@@ -85,23 +76,23 @@ fun HomeScreenHeader(
                     }
                 }
 
-                Spacer(modifier = Modifier.size(4.sdp))
+                Spacer(modifier = Modifier.size(AppDimensions.paddingTiny))
 
                 // Location badge with icon
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.sdp))
+                        .clip(RoundedCornerShape(AppDimensions.cornerSmall))
                         .clickableDebounced { onRefreshLocation() }
-                        .padding(vertical = 2.sdp)
+                        .padding(vertical = AppDimensions.paddingMicro)
                 ) {
                     Icon(
                         imageVector = Icons.Default.LocationOn,
                         contentDescription = "Current Location",
                         tint = DesertOchre,
-                        modifier = Modifier.size(15.sdp)
+                        modifier = Modifier.size(AppDimensions.iconSmall)
                     )
-                    Spacer(modifier = Modifier.width(4.sdp))
+                    Spacer(modifier = Modifier.width(AppDimensions.paddingTiny))
                     AppText.BodySmall(
                         text = locationName.ifBlank { "Detecting location..." },
                         color = TextSecondary,
@@ -111,12 +102,12 @@ fun HomeScreenHeader(
                 }
             }
 
-            Spacer(modifier = Modifier.width(10.sdp))
+            Spacer(modifier = Modifier.width(AppDimensions.paddingRegular))
 
             // Refresh button
             Box(
                 modifier = Modifier
-                    .size(36.sdp)
+                    .size(AppDimensions.buttonSmallHeight)
                     .clip(CircleShape)
                     .background(MedinaSageLight)
                     .clickableDebounced { onRefreshLocation() },
@@ -126,7 +117,7 @@ fun HomeScreenHeader(
                     imageVector = Icons.Default.Refresh,
                     contentDescription = "Refresh Location & Timings",
                     tint = MedinaSage,
-                    modifier = Modifier.size(18.sdp)
+                    modifier = Modifier.size(AppDimensions.iconRegular)
                 )
             }
         }

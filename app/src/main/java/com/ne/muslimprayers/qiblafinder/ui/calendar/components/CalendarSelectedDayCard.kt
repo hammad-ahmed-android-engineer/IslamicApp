@@ -20,12 +20,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSageDark
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSageLight
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.domain.model.IslamicCalendarInfo
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
@@ -49,7 +49,7 @@ fun CalendarSelectedDayCard(day: IslamicCalendarInfo) {
                         color = PureAlabaster,
                         maxLines = 1
                     )
-                    Spacer(modifier = Modifier.height(2.sdp))
+                    Spacer(modifier = Modifier.height(AppDimensions.paddingMicro))
                     AppText.BodyMedium(
                         text = day.hijriFormatted,
                         fontWeight = FontWeight.SemiBold,
@@ -59,7 +59,7 @@ fun CalendarSelectedDayCard(day: IslamicCalendarInfo) {
                 }
                 Box(
                     modifier = Modifier
-                        .size(38.sdp)
+                        .size(AppDimensions.badgeCircleMedium)
                         .clip(CircleShape)
                         .background(DesertOchre.copy(alpha = 0.25f)),
                     contentAlignment = Alignment.Center
@@ -68,18 +68,18 @@ fun CalendarSelectedDayCard(day: IslamicCalendarInfo) {
                         imageVector = Icons.Default.Event,
                         contentDescription = null,
                         tint = DesertOchre,
-                        modifier = Modifier.size(20.sdp)
+                        modifier = Modifier.size(AppDimensions.iconMedium)
                     )
                 }
             }
 
             if (day.holidays.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(10.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingRegular))
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(10.sdp))
+                        .clip(RoundedCornerShape(AppDimensions.cornerMediumSmall))
                         .background(MedinaSageDark)
-                        .padding(horizontal = 10.sdp, vertical = 6.sdp)
+                        .padding(horizontal = AppDimensions.paddingRegular, vertical = AppDimensions.paddingExtraSmall)
                 ) {
                     AppText.BodySmall(
                         text = "Islamic Occasion: ${day.holidays.joinToString(", ")}",

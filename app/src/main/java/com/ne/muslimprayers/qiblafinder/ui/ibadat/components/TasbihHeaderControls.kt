@@ -14,12 +14,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.domain.model.TasbihState
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 
@@ -49,13 +48,16 @@ fun TasbihHeaderControls(
         Row(verticalAlignment = Alignment.CenterVertically) {
             OutlinedButton(
                 onClick = { onSetTarget(if (tasbih.target == 33) 100 else 33) },
-                shape = RoundedCornerShape(12.sdp),
-                contentPadding = PaddingValues(horizontal = 10.sdp, vertical = 4.sdp)
+                shape = RoundedCornerShape(AppDimensions.cornerMedium),
+                contentPadding = PaddingValues(
+                    horizontal = AppDimensions.paddingRegular,
+                    vertical = AppDimensions.paddingTiny
+                )
             ) {
-                Text(text = "Target: ${if (tasbih.target == 33) "100" else "33"}")
+                AppText.LabelMedium(text = "Target: ${if (tasbih.target == 33) "100" else "33"}")
             }
 
-            Spacer(modifier = Modifier.width(8.sdp))
+            Spacer(modifier = Modifier.width(AppDimensions.paddingSmall))
 
             IconButton(onClick = onReset) {
                 Icon(

@@ -12,9 +12,53 @@ import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 object QuranTextFormatter {
 
     const val INLINE_AYAH_END_ID = "inline_ayah_end"
+    const val INLINE_WAQF_PREFIX = "inline_waqf_"
 
     /**
-     * Sacred Quranic Waqf (Stopping Signs) & Tajweed Pause marks in Unicode (Uthmani, Indo-Pak & PDMS PUA)
+     * Canonical inline Waqf / Sajdah ID -> crisp non-combining Arabic pause label pairs
+     * rendered cleanly in inline slots so marks never overlap Tanween/diacritics or split cursive stems.
+     */
+    val WAQF_INLINE_ENTRIES: List<Pair<String, String>> = listOf(
+        "${INLINE_WAQF_PREFIX}wasl" to "صلى",
+        "${INLINE_WAQF_PREFIX}waqf" to "قلى",
+        "${INLINE_WAQF_PREFIX}lazim" to "مـ",
+        "${INLINE_WAQF_PREFIX}mamnu" to "لا",
+        "${INLINE_WAQF_PREFIX}jaiz" to "ج",
+        "${INLINE_WAQF_PREFIX}muanaqah" to "∴",
+        "${INLINE_WAQF_PREFIX}saktah" to "س",
+        "${INLINE_WAQF_PREFIX}mutlaq" to "ط",
+        "${INLINE_WAQF_PREFIX}sajdah" to "۩"
+    )
+
+    fun waqfInlineIdFor(ch: Char): String = when (ch) {
+        '\u06D6', '\uE01B', '\uE020' -> "${INLINE_WAQF_PREFIX}wasl"
+        '\u06D7', '\uE01C' -> "${INLINE_WAQF_PREFIX}waqf"
+        '\u06D8', '\uE01E' -> "${INLINE_WAQF_PREFIX}lazim"
+        '\u06D9', '\uE01A' -> "${INLINE_WAQF_PREFIX}mamnu"
+        '\u06DA', '\uE01D' -> "${INLINE_WAQF_PREFIX}jaiz"
+        '\u06DB', '\uE01F' -> "${INLINE_WAQF_PREFIX}muanaqah"
+        '\u06DC' -> "${INLINE_WAQF_PREFIX}saktah"
+        '\u0615' -> "${INLINE_WAQF_PREFIX}mutlaq"
+        '\u06E9' -> "${INLINE_WAQF_PREFIX}sajdah"
+        else -> "${INLINE_WAQF_PREFIX}jaiz"
+    }
+
+    fun waqfDisplayLabel(ch: Char): String = when (ch) {
+        '\u06D6', '\uE01B', '\uE020' -> "صلى"
+        '\u06D7', '\uE01C' -> "قلى"
+        '\u06D8', '\uE01E' -> "مـ"
+        '\u06D9', '\uE01A' -> "لا"
+        '\u06DA', '\uE01D' -> "ج"
+        '\u06DB', '\uE01F' -> "∴"
+        '\u06DC' -> "س"
+        '\u0615' -> "ط"
+        '\u06E9' -> "۩"
+        else -> ch.toString()
+    }
+
+    /**
+     * Sacred Quranic Waqf (Stopping Signs) & Tajweed Pause marks in Unicode (Uthmani, Indo-Pak & PDMS PUA).
+     * Note: U+06DF (۟) and U+06E0 (۠) are silent-letter circles (e.g. أُو۟لَـٰٓئِكَ / قَالُوا۟), NOT Waqf pauses.
      */
     val WAQF_MARKS = setOf(
         '\u06D6', // ۖ Al-Wasl Awla (صلى)
@@ -25,8 +69,6 @@ object QuranTextFormatter {
         '\u06DB', // ۛ Mu'anaqah (∴)
         '\u06DC', // ۜ Saktah (س)
         '\u0615', // ؕ Small High Tah (Waqf Mutlaq - Indo-Pak)
-        '\u06DF', // ۟ Small High Rounded Zero
-        '\u06E0', // ۠ Small High Upright Rectangular Zero
         '\u06E9', // ۩ Sajdah
         '\uE01A', // PDMS PUA Laa
         '\uE01B', // PDMS PUA Sad-Lam-Ya
@@ -34,28 +76,29 @@ object QuranTextFormatter {
         '\uE01D', // PDMS PUA Jeem
         '\uE01E', // PDMS PUA Meem
         '\uE01F', // PDMS PUA Mu'anaqah
-        '\uE020', // PDMS PUA Waqf
-        '\uE021', // PDMS PUA Seen
-        '\uE022'  // PDMS PUA Sajdah
+        '\uE020'  // PDMS PUA Waqf
     )
 
     private val TANWEEN_MARKS = setOf('\u064B', '\u064C', '\u064D')
+    private val HARAKAT_VOWELS = setOf('\u064E', '\u064F', '\u0650', '\u0651', '\u0656', '\u0657')
     private val SUKUN_MARKS = setOf('\u0652', '\u06E1')
-    private val MADD_MARKS = setOf('\u0653', '\u06E4', '\u0670', '\u0657')
+    private val MADD_MARKS = setOf('\u0653', '\u06E4')
     private val IQLAB_MARKS = setOf('\u06E2', '\u06ED')
 
     // Authentic Tajweed Color Palette for Coloured Quran
-    val TAJWEED_WAQF_COLOR = Color(0xFFD84315)      // Deep Warm Terracotta / Ochre for Waqf Pause characters & signs
-    val TAJWEED_MADD_COLOR = Color(0xFFC62828)      // Crimson Red for Madd (elongation)
-    val TAJWEED_GHUNNAH_COLOR = Color(0xFF2E7D32)   // Forest Green for Ghunnah (نّ / مّ)
-    val TAJWEED_IKHFA_COLOR = Color(0xFF00897B)     // Teal Green for Ikhfa & Idgham with Ghunnah
+    val TAJWEED_WAQF_COLOR = Color(0xFFD84315)      // Deep Warm Terracotta for Waqf Pause characters & signs
+    val TAJWEED_MADD_COLOR = Color(0xFFC62828)      // Crimson Red for Madd (4-6 count elongation)
+    val TAJWEED_GHUNNAH_COLOR = Color(0xFF2E7D32)   // Forest Green for Ghunnah & Idgham w/ Ghunnah
+    val TAJWEED_IKHFA_COLOR = Color(0xFF00897B)     // Teal Green for Ikhfa & Ikhfa Shafawi
     val TAJWEED_QALQALAH_COLOR = Color(0xFF1565C0)  // Sapphire Blue for Qalqalah (ق ط ب ج د)
     val TAJWEED_IQLAB_COLOR = Color(0xFF7B1FA2)     // Royal Purple for Iqlab (م / ب)
 
     val QALQALAH_LETTERS = setOf('ق', 'ط', 'ب', 'ج', 'د')
-    private val IKHFA_IDGHAM_LETTERS = setOf(
-        'ت', 'ث', 'ج', 'د', 'ذ', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ف', 'ق', 'ك', 'ي', 'ی', 'ن', 'م', 'و'
+    private val IKHFA_LETTERS = setOf(
+        'ت', 'ث', 'ج', 'د', 'ذ', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ف', 'ق', 'ك', '\u06A9'
     )
+    private val IDGHAM_WITH_GHUNNAH_LETTERS = setOf('ي', '\u06CC', 'ن', 'م', 'و')
+    private val SILENT_CARRIER_LETTERS = setOf('ا', 'ى', '\u06D2', '\u06DF', '\u06E0')
 
     /**
      * Converts an integer to Eastern Arabic-Indic digits (٠, ١, ٢, ٣, ٤, ٥, ٦, ٧, ٨, ٩).
@@ -141,99 +184,226 @@ object QuranTextFormatter {
         return clusters
     }
 
+    private fun isBareOrSakin(cluster: GraphemeCluster): Boolean {
+        if (cluster.hasAny(SUKUN_MARKS)) return true
+        if (cluster.hasAny(HARAKAT_VOWELS) || cluster.hasAny(TANWEEN_MARKS)) return false
+        return true
+    }
+
+    private data class NextPhoneticTarget(
+        val cluster: GraphemeCluster,
+        val crossesWordBoundary: Boolean,
+        val crossesWaqfPause: Boolean
+    )
+
+    private fun findNextPhoneticTarget(
+        clusters: List<GraphemeCluster>,
+        fromIndex: Int,
+        skipSilentAlefCarrier: Boolean = false
+    ): NextPhoneticTarget? {
+        var i = fromIndex + 1
+        var sawSpace = false
+        var sawWaqf = false
+        var skippedCarrier = false
+
+        while (i < clusters.size) {
+            val c = clusters[i]
+            if (c.baseChar == ' ') {
+                sawSpace = true
+                i++
+                continue
+            }
+            if (c.baseChar in WAQF_MARKS) {
+                sawWaqf = true
+                i++
+                continue
+            }
+            if (skipSilentAlefCarrier && !skippedCarrier &&
+                c.baseChar in SILENT_CARRIER_LETTERS &&
+                !c.hasAny(HARAKAT_VOWELS) && !c.hasAny(TANWEEN_MARKS)
+            ) {
+                skippedCarrier = true
+                if (c.hasAny(WAQF_MARKS)) sawWaqf = true
+                i++
+                continue
+            }
+            return NextPhoneticTarget(
+                cluster = c,
+                crossesWordBoundary = sawSpace || skippedCarrier,
+                crossesWaqfPause = sawWaqf
+            )
+        }
+        return null
+    }
+
     /**
-     * Applies shaping-safe Tajweed colors across Arabic grapheme clusters.
+     * Applies shaping-safe, font-aware Tajweed & Waqf pause colors across Arabic grapheme clusters.
      *
-     * IMPORTANT: Only `SpanStyle(color = ...)` is applied (never changing `fontWeight` or `fontFamily`
-     * mid-word), which guarantees HarfBuzz keeps Arabic cursive joining and diacritic placement 100% intact.
-     * Characters on which Tajweed pauses (Waqf marks) are added are colored together with their pause sign.
+     * Key per-font shaping protections:
+     * - Only `SpanStyle(color = ...)` is emitted (never `fontWeight` or `fontFamily`), keeping HarfBuzz cursive joining intact.
+     * - Adjacent ligated pairs (such as Tatweel-Madd `ـٰٓ` and Lam-Alef Madd `لَآ`) share the same `SpanStyle`
+     *   so no font (Muhammadi, Hafs, Al-Majeed, Al-Mushaf, Al-Qalam, Nabi, PDMS Saleem) suffers mid-ligature clipping.
+     * - Cross-word Tajweed rules skip silent Alef carriers (`ـًا`, `ـًى`) so Tanween Ikhfa/Idgham/Iqlab match accurately.
+     * - Mid-verse Waqf marks on fonts without standalone `cls=1` PUA glyphs are extracted out of the Arabic cluster
+     *   into atomic [appendInlineContent] pause slots so they never stack on Tanween or tear cursive final letters.
      */
-    private fun AnnotatedString.Builder.appendTajweedColoredText(
+    private fun AnnotatedString.Builder.appendFormattedBodyText(
         trimmed: String,
-        waqfHighlightColor: Color
+        isColored: Boolean,
+        waqfHighlightColor: Color,
+        useInlineWaqfMarks: Boolean
     ) {
         val clusters = parseClusters(trimmed)
         if (clusters.isEmpty()) return
 
         val clusterColors = arrayOfNulls<Color>(clusters.size)
 
-        // Pass 1: Identify Tajweed rules and Waqf pauses per grapheme cluster
-        for (idx in clusters.indices) {
-            val cluster = clusters[idx]
-            val base = cluster.baseChar
-            if (base == ' ') continue
+        if (isColored) {
+            for (idx in clusters.indices) {
+                val cluster = clusters[idx]
+                val base = cluster.baseChar
+                if (base == ' ') continue
 
-            // Next non-space cluster for context-sensitive rules (Ikhfa, Idgham, Iqlab, Waqf)
-            var nextCluster: GraphemeCluster? = null
-            var nextIdx = idx + 1
-            while (nextIdx < clusters.size) {
-                if (clusters[nextIdx].baseChar != ' ') {
-                    nextCluster = clusters[nextIdx]
-                    break
-                }
-                nextIdx++
-            }
+                val nextDirect = findNextPhoneticTarget(clusters, idx, skipSilentAlefCarrier = false)
+                val hasWaqaMark = cluster.hasAny(WAQF_MARKS) || base in WAQF_MARKS
 
-            // 1. Waqf / Tajweed Pause Marks:
-            // If this cluster IS a Waqf mark or CARRIES a Waqf mark (e.g., ؕ, ۚ, ۖ, ۗ, ۘ, ۙ, etc.),
-            // color this cluster AND if it's a standalone Waqf sign (or followed immediately by a Waqf sign),
-            // also color the preceding character cluster on which the pause occurs!
-            if (cluster.hasAny(WAQF_MARKS) || base in WAQF_MARKS) {
-                clusterColors[idx] = TAJWEED_WAQF_COLOR
-                // If this cluster is a standalone Waqf sign (possibly preceded by a space),
-                // also highlight the final character cluster of the paused word right before it
+                // 1. Standalone Waqf pause glyph (spaced cls=1 PUA or isolated Waqf symbol)
                 if (base in WAQF_MARKS) {
-                    var prevIdx = idx - 1
-                    while (prevIdx >= 0 && clusters[prevIdx].baseChar == ' ') {
-                        prevIdx--
-                    }
-                    if (prevIdx >= 0 && clusterColors[prevIdx] == null) {
-                        clusterColors[prevIdx] = TAJWEED_WAQF_COLOR
-                    }
+                    clusterColors[idx] = TAJWEED_WAQF_COLOR
+                    continue
                 }
-                continue
-            }
 
-            // 2. Iqlab (Small High Meem ۢ or Noon/Tanween before ب)
-            if (cluster.hasAny(IQLAB_MARKS) ||
-                ((base == 'ن' && (cluster.hasAny(SUKUN_MARKS) || cluster.text.length == 1)) || cluster.hasAny(TANWEEN_MARKS)) &&
-                nextCluster?.baseChar == 'ب'
-            ) {
-                clusterColors[idx] = TAJWEED_IQLAB_COLOR
-                continue
-            }
+                // 2. Iqlab (Small High/Low Meem ۢ / ۭ OR Noon Sakin / Tanween before ب)
+                val hasTanween = cluster.hasAny(TANWEEN_MARKS)
+                val isNoonSakin = base == 'ن' && isBareOrSakin(cluster)
+                val nextAfterTanweenOrNoon = if (hasTanween || isNoonSakin) {
+                    findNextPhoneticTarget(clusters, idx, skipSilentAlefCarrier = hasTanween)
+                } else {
+                    nextDirect
+                }
+                if (cluster.hasAny(IQLAB_MARKS) ||
+                    ((isNoonSakin || hasTanween) && nextAfterTanweenOrNoon?.cluster?.baseChar == 'ب')
+                ) {
+                    clusterColors[idx] = TAJWEED_IQLAB_COLOR
+                    continue
+                }
 
-            // 3. Ghunnah (Noon or Meem with Shaddah ّ)
-            if ((base == 'ن' || base == 'م') && cluster.hasChar('\u0651')) {
-                clusterColors[idx] = TAJWEED_GHUNNAH_COLOR
-                continue
-            }
+                // 3. Qalqalah (ق ط ب ج د with Sukun, OR at verse end / right before a Waqf pause)
+                val isAtEndOrPause = hasWaqaMark ||
+                        nextDirect == null ||
+                        nextDirect.crossesWaqfPause ||
+                        nextDirect.cluster.baseChar in WAQF_MARKS
+                if (base in QALQALAH_LETTERS && (cluster.hasAny(SUKUN_MARKS) || isAtEndOrPause)) {
+                    clusterColors[idx] = TAJWEED_QALQALAH_COLOR
+                    continue
+                }
 
-            // 4. Qalqalah (ق ط ب ج د with Sukun OR at the very end of the verse / before a Waqf pause)
-            val isBeforePauseOrEnd = nextCluster == null ||
-                    nextCluster.baseChar in WAQF_MARKS ||
-                    nextCluster.hasAny(WAQF_MARKS)
-            if (base in QALQALAH_LETTERS && (cluster.hasAny(SUKUN_MARKS) || isBeforePauseOrEnd)) {
-                clusterColors[idx] = TAJWEED_QALQALAH_COLOR
-                continue
-            }
+                // 4. Ghunnah (نّ / مّ) + Idgham with Ghunnah (Noon Sakin / Tanween + ي ن م و across word boundary)
+                //    + Idgham Shafawi (Meem Sakin + م across word boundary)
+                if ((base == 'ن' || base == 'م') && cluster.hasChar('\u0651')) {
+                    clusterColors[idx] = TAJWEED_GHUNNAH_COLOR
+                    continue
+                }
+                if ((isNoonSakin || hasTanween) &&
+                    nextAfterTanweenOrNoon != null &&
+                    nextAfterTanweenOrNoon.crossesWordBoundary &&
+                    !nextAfterTanweenOrNoon.crossesWaqfPause &&
+                    nextAfterTanweenOrNoon.cluster.baseChar in IDGHAM_WITH_GHUNNAH_LETTERS
+                ) {
+                    clusterColors[idx] = TAJWEED_GHUNNAH_COLOR
+                    continue
+                }
+                val isMeemSakin = base == 'م' && isBareOrSakin(cluster)
+                if (isMeemSakin &&
+                    nextDirect != null &&
+                    nextDirect.crossesWordBoundary &&
+                    !nextDirect.crossesWaqfPause &&
+                    nextDirect.cluster.baseChar == 'م'
+                ) {
+                    clusterColors[idx] = TAJWEED_GHUNNAH_COLOR
+                    continue
+                }
 
-            // 5. Ikhfa & Idgham with Ghunnah (Noon Sakinah or Tanween followed by Ikhfa/Idgham letter)
-            val isNoonSakin = base == 'ن' && (cluster.hasAny(SUKUN_MARKS) || cluster.text.length == 1)
-            val hasTanween = cluster.hasAny(TANWEEN_MARKS)
-            if ((isNoonSakin || hasTanween) && nextCluster != null && nextCluster.baseChar in IKHFA_IDGHAM_LETTERS) {
-                clusterColors[idx] = TAJWEED_IKHFA_COLOR
-                continue
-            }
+                // 5. Ikhfa (Noon Sakin / Tanween + 15 Ikhfa letters) & Ikhfa Shafawi (Meem Sakin + ب)
+                if ((isNoonSakin || hasTanween) &&
+                    nextAfterTanweenOrNoon != null &&
+                    !nextAfterTanweenOrNoon.crossesWaqfPause &&
+                    nextAfterTanweenOrNoon.cluster.baseChar in IKHFA_LETTERS
+                ) {
+                    clusterColors[idx] = TAJWEED_IKHFA_COLOR
+                    continue
+                }
+                if (isMeemSakin &&
+                    nextDirect != null &&
+                    nextDirect.crossesWordBoundary &&
+                    !nextDirect.crossesWaqfPause &&
+                    nextDirect.cluster.baseChar == 'ب'
+                ) {
+                    clusterColors[idx] = TAJWEED_IKHFA_COLOR
+                    continue
+                }
 
-            // 6. Madd (Elongation: Maddah ~, Small High Mad ۤ, Dagger Alif ٰ, Inverted Damma ٗ)
-            if (cluster.hasAny(MADD_MARKS)) {
-                clusterColors[idx] = TAJWEED_MADD_COLOR
-                continue
+                // 6. Madd (Obligatory / Permissible 4-6 count Elongation: Maddah ٓ, Small High Madda ۤ, Alif Madda آ)
+                if (cluster.hasAny(MADD_MARKS) || base == '\u0622') {
+                    clusterColors[idx] = TAJWEED_MADD_COLOR
+                    // Keep Tatweel-Madd (e.g. يَـٰٓ) and Lam-Alef Madd ligature (لَآ) unified
+                    // so HarfBuzz never splits the cursive stroke or Lam-Alef ligature in any font
+                    if (idx > 0 && clusters[idx - 1].baseChar != ' ') {
+                        val prev = clusters[idx - 1]
+                        if (base == '\u0640' || (base == 'ا' && prev.baseChar == 'ل')) {
+                            if (clusterColors[idx - 1] == null) {
+                                clusterColors[idx - 1] = TAJWEED_MADD_COLOR
+                            }
+                        }
+                    }
+                    continue
+                }
             }
         }
 
-        // Pass 2: Emit contiguous runs of identical color to minimize Span count and preserve ligatures
+        // Emit contiguous color runs; when useInlineWaqfMarks is enabled, extract Waqf marks
+        // out of clusters into atomic inline slots so combining Waqf marks never collide with
+        // Tanween/Shaddah or cause cursive span splits.
+        fun emitSegment(slice: String, activeColor: Color?) {
+            if (!useInlineWaqfMarks) {
+                val renderedColor = if (activeColor == TAJWEED_WAQF_COLOR) waqfHighlightColor else activeColor
+                if (renderedColor != null) {
+                    withStyle(SpanStyle(color = renderedColor)) {
+                        append(slice)
+                    }
+                } else {
+                    append(slice)
+                }
+                return
+            }
+
+            var textBuf = StringBuilder()
+            fun flushTextBuf() {
+                if (textBuf.isNotEmpty()) {
+                    val str = textBuf.toString()
+                    if (activeColor != null && activeColor != TAJWEED_WAQF_COLOR) {
+                        withStyle(SpanStyle(color = activeColor)) {
+                            append(str)
+                        }
+                    } else {
+                        append(str)
+                    }
+                    textBuf = StringBuilder()
+                }
+            }
+
+            for (ch in slice) {
+                if (ch in WAQF_MARKS) {
+                    flushTextBuf()
+                    append(" ")
+                    appendInlineContent(waqfInlineIdFor(ch), waqfDisplayLabel(ch))
+                } else {
+                    textBuf.append(ch)
+                }
+            }
+            flushTextBuf()
+        }
+
         var runStart = 0
         while (runStart < clusters.size) {
             val activeColor = clusterColors[runStart]
@@ -242,15 +412,56 @@ object QuranTextFormatter {
                 runEnd++
             }
             val textSlice = trimmed.substring(clusters[runStart].start, clusters[runEnd - 1].end)
-            if (activeColor != null) {
-                withStyle(SpanStyle(color = activeColor)) {
-                    append(textSlice)
-                }
-            } else {
-                append(textSlice)
-            }
+            emitSegment(textSlice, activeColor)
             runStart = runEnd
         }
+    }
+
+    /**
+     * Data result for a formatted Ayah containing its AnnotatedString and an optional extracted
+     * end-of-verse special Waqf / Sajdah mark to be positioned directly ABOVE the rosette icon.
+     */
+    data class FormattedAyahResult(
+        val annotatedString: AnnotatedString,
+        val endingSpecialMark: String? = null
+    )
+
+    private val ENDING_SPECIAL_MARKS = setOf(
+        '\u06D6', // ۖ Al-Wasl Awla
+        '\u06D7', // ۗ Al-Waqf Awla
+        '\u06D8', // ۘ Waqf Lazim
+        '\u06D9', // ۙ Waqf Mamnu'
+        '\u06DA', // ۚ Waqf Ja'iz
+        '\u06DB', // ۛ Mu'anaqah
+        '\u06DC', // ۜ Saktah
+        '\u0615', // ؕ Small High Tah
+        '\u06E9', // ۩ Sajdah
+        '\uE01A', '\uE01B', '\uE01C', '\uE01D', '\uE01E', '\uE01F', '\uE020'
+    )
+
+    /**
+     * Extracts ALL trailing end-of-verse Waqf pause signs or Sajdah marks so they render cleanly
+     * floating centered ABOVE the Ayah rosette icon instead of sitting beside it.
+     */
+    fun extractEndingSpecialMark(text: String): Pair<String, String?> {
+        var trimmed = text.trim()
+        if (trimmed.isEmpty()) return Pair(trimmed, null)
+
+        val collectedMarks = mutableListOf<String>()
+        while (trimmed.isNotEmpty() && trimmed.last() in ENDING_SPECIAL_MARKS) {
+            val label = waqfDisplayLabel(trimmed.last())
+            if (collectedMarks.firstOrNull() != label) {
+                collectedMarks.add(0, label)
+            }
+            trimmed = trimmed.dropLast(1).trimEnd()
+        }
+
+        val combinedMark = if (collectedMarks.isNotEmpty()) {
+            collectedMarks.joinToString(" ")
+        } else {
+            null
+        }
+        return Pair(trimmed, combinedMark)
     }
 
     /**
@@ -268,15 +479,17 @@ object QuranTextFormatter {
         ayahEndColor: Color = DesertOchre,
         fontKey: String = ArabicFontManager.currentFontKey.value
     ): AnnotatedString {
-        val trimmed = cleanAyahTextForDisplay(surahNumber, ayahNumberInSurah, rawArabicText, fontKey)
+        val cleanedText = cleanAyahTextForDisplay(surahNumber, ayahNumberInSurah, rawArabicText, fontKey)
+        val (bodyText, _) = extractEndingSpecialMark(cleanedText)
         val arabicNumber = ayahNumberInSurah.toArabicDigits()
 
         return buildAnnotatedString {
-            if (!isColored) {
-                append(trimmed)
-            } else {
-                appendTajweedColoredText(trimmed, waqfHighlightColor)
-            }
+            appendFormattedBodyText(
+                trimmed = bodyText,
+                isColored = isColored,
+                waqfHighlightColor = waqfHighlightColor,
+                useInlineWaqfMarks = false
+            )
 
             withStyle(
                 SpanStyle(
@@ -291,29 +504,38 @@ object QuranTextFormatter {
     /**
      * Formats an Ayah's raw text inserting an [InlineTextContent] placeholder for the Ayah End Rosette,
      * ensuring the verse number is rendered perfectly INSIDE the circular rosette without detachment.
-     * Supports Plain (monochrome) vs Coloured (Tajweed colored) Quran styles.
+     * Extracts trailing Waqf/Sajdah marks so they float centered ABOVE the rosette icon, and converts
+     * mid-verse colliding Waqf marks into non-overlapping inline pause slots.
      */
     fun formatAyahWithInlineEndSign(
         rawArabicText: String,
         ayahNumberInSurah: Int,
         surahNumber: Int = 1,
         isColored: Boolean = true,
-        waqfHighlightColor: Color = DesertOchre,
+        waqfHighlightColor: Color = TAJWEED_WAQF_COLOR,
         fontKey: String = ArabicFontManager.currentFontKey.value
-    ): AnnotatedString {
-        val trimmed = cleanAyahTextForDisplay(surahNumber, ayahNumberInSurah, rawArabicText, fontKey)
+    ): FormattedAyahResult {
+        val cleanedText = cleanAyahTextForDisplay(surahNumber, ayahNumberInSurah, rawArabicText, fontKey)
+        val (bodyText, extractedEndingMark) = extractEndingSpecialMark(cleanedText)
         val arabicNumber = ayahNumberInSurah.toArabicDigits()
+        val fontConfig = ArabicFontManager.getTypographyConfig(fontKey)
 
-        return buildAnnotatedString {
-            if (!isColored) {
-                append(trimmed)
-            } else {
-                appendTajweedColoredText(trimmed, waqfHighlightColor)
-            }
+        val annotated = buildAnnotatedString {
+            appendFormattedBodyText(
+                trimmed = bodyText,
+                isColored = isColored,
+                waqfHighlightColor = waqfHighlightColor,
+                useInlineWaqfMarks = !fontConfig.supportsPdmsPua
+            )
 
             append(" ")
             appendInlineContent(INLINE_AYAH_END_ID, "\u06DD$arabicNumber")
         }
+
+        return FormattedAyahResult(
+            annotatedString = annotated,
+            endingSpecialMark = extractedEndingMark
+        )
     }
 
     /**

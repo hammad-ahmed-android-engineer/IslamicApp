@@ -126,7 +126,8 @@ class CompassViewModel @Inject constructor(
                         needleAngle = needleAngle,
                         isFacingQibla = isFacing,
                         sensorAccuracy = reading.accuracy,
-                        isSensorAvailable = reading.isSensorAvailable
+                        isSensorAvailable = reading.isSensorAvailable,
+                        tiltDegrees = reading.tiltDegrees
                     )
                 }
             }

@@ -20,7 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.window.Dialog
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 
 @Composable
@@ -34,17 +34,17 @@ fun HijriOffsetDialog(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.sdp)),
+                .clip(RoundedCornerShape(AppDimensions.cornerExtraLarge)),
             color = MaterialTheme.colorScheme.surface
         ) {
-            Column(modifier = Modifier.padding(20.sdp)) {
+            Column(modifier = Modifier.padding(AppDimensions.paddingMediumLarge)) {
                 AppText.TitleMedium(
                     text = "Hijri Calendar Adjustment",
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1
                 )
-                Spacer(modifier = Modifier.height(12.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingMediumSmall))
                 offsets.forEach { offset ->
                     val label = when {
                         offset > 0 -> "+$offset Days"
@@ -54,9 +54,9 @@ fun HijriOffsetDialog(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(10.sdp))
+                            .clip(RoundedCornerShape(AppDimensions.cornerMediumSmall))
                             .clickableDebounced { onSelect(offset) }
-                            .padding(vertical = 10.sdp, horizontal = 8.sdp),
+                            .padding(vertical = AppDimensions.paddingRegular, horizontal = AppDimensions.paddingSmall),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {

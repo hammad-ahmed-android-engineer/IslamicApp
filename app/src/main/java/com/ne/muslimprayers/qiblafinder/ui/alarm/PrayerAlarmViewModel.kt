@@ -18,6 +18,8 @@ import com.ne.muslimprayers.qiblafinder.domain.usecase.TogglePrayerAlarmUseCase
 import com.ne.muslimprayers.qiblafinder.service.AlarmScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,6 +31,8 @@ data class PrayerAlarmUiState(
     val alarms: List<PrayerAlarmItem> = emptyList(),
     val notificationModes: Map<PrayerType, PrayerNotificationMode> = emptyMap(),
     val masterNotificationsEnabled: Boolean = true,
+    val sunriseTime: String = "--:-- AM",
+    val sunsetTime: String = "--:-- PM",
     val isPlayingPreview: Boolean = false,
     val previewPrayerType: PrayerType? = null,
     val isLoading: Boolean = false
@@ -57,6 +61,7 @@ class PrayerAlarmViewModel @Inject constructor(
     val uiState: StateFlow<PrayerAlarmUiState> = _uiState.asStateFlow()
 
     private var previewPlayer: MediaPlayer? = null
+    private var previewStopJob: Job? = null
 
     init {
         observeSettings()
@@ -97,7 +102,14 @@ class PrayerAlarmViewModel @Inject constructor(
             val location = locationHelper.getCurrentLocation() ?: locationHelper.getEffectiveLocation()
             getPrayerScheduleUseCase(location.latitude, location.longitude).collect { result ->
                 if (result is Resource.Success && result.data != null) {
-                    prayerAlarmRepository.syncPrayerAlarmsWithSchedule(result.data)
+                    val schedule = result.data
+                    _uiState.update {
+                        it.copy(
+                            sunriseTime = schedule.sunrise.timeFormatted,
+                            sunsetTime = schedule.maghrib.timeFormatted
+                        )
+                    }
+                    prayerAlarmRepository.syncPrayerAlarmsWithSchedule(schedule)
                 }
             }
         }
@@ -171,6 +183,10 @@ class PrayerAlarmViewModel @Inject constructor(
                 start()
             }
             _uiState.update { it.copy(isPlayingPreview = true, previewPrayerType = prayerType) }
+            previewStopJob = viewModelScope.launch {
+                delay(12_000L)
+                stopPreviewAdhan()
+            }
         } catch (_: Exception) {
             _uiState.update { it.copy(isPlayingPreview = false, previewPrayerType = null) }
         }
@@ -178,6 +194,8 @@ class PrayerAlarmViewModel @Inject constructor(
 
     fun stopPreviewAdhan() {
         try {
+            previewStopJob?.cancel()
+            previewStopJob = null
             previewPlayer?.let {
                 if (it.isPlaying) it.stop()
                 it.release()

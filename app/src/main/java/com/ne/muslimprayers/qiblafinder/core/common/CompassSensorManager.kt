@@ -16,20 +16,32 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.abs
-import kotlin.math.atan2
-import kotlin.math.sqrt
+import kotlin.math.hypot
 
 data class CompassReading(
     val azimuthTrueNorth: Float,
     val accuracy: Int,
+    val tiltDegrees: Float = 0f,
     val isSensorAvailable: Boolean = true
 )
 
+/**
+ * Sensor engine.
+ * - Uses hardware-fused [Sensor.TYPE_ROTATION_VECTOR] (or [Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR])
+ *   with [Sensor.TYPE_MAGNETIC_FIELD] for calibration accuracy tracking, and automatically falls back
+ *   to low-pass filtered [Sensor.TYPE_ACCELEROMETER] + [Sensor.TYPE_MAGNETIC_FIELD] sensor fusion.
+ * - Remaps axes for display rotation, applies [GeomagneticField] declination for True North,
+ *   computes device tilt angle, and applies shortest-path circular smoothing.
+ */
 @Singleton
 class CompassSensorManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
+
+    companion object {
+        private const val LOW_PASS_ALPHA = 0.15f
+    }
 
     fun hasCompassSensor(): Boolean {
         val sm = sensorManager ?: return false
@@ -59,6 +71,7 @@ class CompassSensorManager @Inject constructor(
             ?: sm.getDefaultSensor(Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR)
         val accelSensor = sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         val magSensor = sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+        val hasRotationVector = rotationVectorSensor != null
 
         // Calculate magnetic declination to convert Magnetic North -> True North
         val declinationDeg: Float = if (latitude != 0.0 || longitude != 0.0) {
@@ -79,15 +92,28 @@ class CompassSensorManager @Inject constructor(
         val rotationMatrix = FloatArray(9)
         val remappedMatrix = FloatArray(9)
         val inclinationMatrix = FloatArray(9)
-        val orientation = FloatArray(3)
+        val orientationAngles = FloatArray(3)
 
-        val gravity = FloatArray(3)
-        val geomagnetic = FloatArray(3)
-        var hasGravity = false
-        var hasGeomagnetic = false
+        val accelerometerReading = FloatArray(3)
+        val magnetometerReading = FloatArray(3)
+        var hasAccelerometer = false
+        var hasMagnetometer = false
 
         var smoothedAzimuth = Float.NaN
+        var smoothedTilt = 0f
         var currentAccuracy = SensorManager.SENSOR_STATUS_ACCURACY_HIGH
+
+        fun lowPassFilter(input: FloatArray, output: FloatArray, initialized: Boolean) {
+            if (!initialized) {
+                output[0] = input[0]
+                output[1] = input[1]
+                output[2] = input[2]
+            } else {
+                output[0] = output[0] + LOW_PASS_ALPHA * (input[0] - output[0])
+                output[1] = output[1] + LOW_PASS_ALPHA * (input[1] - output[1])
+                output[2] = output[2] + LOW_PASS_ALPHA * (input[2] - output[2])
+            }
+        }
 
         val listener = object : SensorEventListener {
             override fun onSensorChanged(event: SensorEvent) {
@@ -101,89 +127,76 @@ class CompassSensorManager @Inject constructor(
                     }
 
                     Sensor.TYPE_ACCELEROMETER -> {
-                        val filterFactor = if (hasGravity) 0.85f else 0f
-                        gravity[0] = filterFactor * gravity[0] + (1f - filterFactor) * event.values[0]
-                        gravity[1] = filterFactor * gravity[1] + (1f - filterFactor) * event.values[1]
-                        gravity[2] = filterFactor * gravity[2] + (1f - filterFactor) * event.values[2]
-                        hasGravity = true
-                        if (hasGeomagnetic && rotationVectorSensor == null) {
-                            matrixReady = SensorManager.getRotationMatrix(
-                                rotationMatrix,
-                                inclinationMatrix,
-                                gravity,
-                                geomagnetic
-                            )
+                        if (!hasRotationVector) {
+                            lowPassFilter(event.values, accelerometerReading, hasAccelerometer)
+                            hasAccelerometer = true
+                            if (hasMagnetometer) {
+                                matrixReady = SensorManager.getRotationMatrix(
+                                    rotationMatrix,
+                                    inclinationMatrix,
+                                    accelerometerReading,
+                                    magnetometerReading
+                                )
+                            }
                         }
                     }
 
                     Sensor.TYPE_MAGNETIC_FIELD -> {
-                        if (event.accuracy > 0) {
+                        if (event.accuracy >= 0) {
                             currentAccuracy = event.accuracy
                         }
-                        val filterFactor = if (hasGeomagnetic) 0.85f else 0f
-                        geomagnetic[0] = filterFactor * geomagnetic[0] + (1f - filterFactor) * event.values[0]
-                        geomagnetic[1] = filterFactor * geomagnetic[1] + (1f - filterFactor) * event.values[1]
-                        geomagnetic[2] = filterFactor * geomagnetic[2] + (1f - filterFactor) * event.values[2]
-                        hasGeomagnetic = true
-                        if (hasGravity && rotationVectorSensor == null) {
-                            matrixReady = SensorManager.getRotationMatrix(
-                                rotationMatrix,
-                                inclinationMatrix,
-                                gravity,
-                                geomagnetic
-                            )
+                        if (!hasRotationVector) {
+                            lowPassFilter(event.values, magnetometerReading, hasMagnetometer)
+                            hasMagnetometer = true
+                            if (hasAccelerometer) {
+                                matrixReady = SensorManager.getRotationMatrix(
+                                    rotationMatrix,
+                                    inclinationMatrix,
+                                    accelerometerReading,
+                                    magnetometerReading
+                                )
+                            }
                         }
                     }
                 }
 
                 if (!matrixReady) return
 
-                // Adjust coordinate axes for current screen orientation (Portrait / Landscape)
+                // Remap coordinate system for current screen rotation (Portrait / Landscape)
                 val displayRotation = getDisplayRotation()
-                val (axisX, axisY) = when (displayRotation) {
-                    Surface.ROTATION_90 -> SensorManager.AXIS_Y to SensorManager.AXIS_MINUS_X
-                    Surface.ROTATION_180 -> SensorManager.AXIS_MINUS_X to SensorManager.AXIS_MINUS_Y
-                    Surface.ROTATION_270 -> SensorManager.AXIS_MINUS_Y to SensorManager.AXIS_X
-                    else -> SensorManager.AXIS_X to SensorManager.AXIS_Y
-                }
-
-                val remapSuccess = SensorManager.remapCoordinateSystem(
-                    rotationMatrix,
-                    axisX,
-                    axisY,
-                    remappedMatrix
-                )
-                val activeMatrix = if (remapSuccess) remappedMatrix else rotationMatrix
-
-                // Compute azimuth reliably both when flat and when tilted upright
-                // Standard getOrientation uses atan2(R[1], R[4]), which can gimbal-lock near 90° pitch.
-                val r7 = activeMatrix[7] // sin(pitch)
-                val rawMagneticAzimuthDeg: Float = if (abs(r7) > 0.75f) {
-                    // Phone is held steeply tilted (> ~48 degrees): project device Z-axis onto horizontal plane
-                    val east = activeMatrix[2].toDouble()
-                    val north = activeMatrix[5].toDouble()
-                    val norm = sqrt(east * east + north * north)
-                    if (norm > 1e-4) {
-                        Math.toDegrees(atan2(-east, -north)).toFloat()
+                val activeMatrix = if (displayRotation != Surface.ROTATION_0) {
+                    val (axisX, axisY) = when (displayRotation) {
+                        Surface.ROTATION_90 -> SensorManager.AXIS_Y to SensorManager.AXIS_MINUS_X
+                        Surface.ROTATION_180 -> SensorManager.AXIS_MINUS_X to SensorManager.AXIS_MINUS_Y
+                        Surface.ROTATION_270 -> SensorManager.AXIS_MINUS_Y to SensorManager.AXIS_X
+                        else -> SensorManager.AXIS_X to SensorManager.AXIS_Y
+                    }
+                    if (SensorManager.remapCoordinateSystem(rotationMatrix, axisX, axisY, remappedMatrix)) {
+                        remappedMatrix
                     } else {
-                        SensorManager.getOrientation(activeMatrix, orientation)
-                        Math.toDegrees(orientation[0].toDouble()).toFloat()
+                        rotationMatrix
                     }
                 } else {
-                    SensorManager.getOrientation(activeMatrix, orientation)
-                    Math.toDegrees(orientation[0].toDouble()).toFloat()
+                    rotationMatrix
                 }
+
+                // Extract [azimuth, pitch, roll] from orientation matrix
+                SensorManager.getOrientation(activeMatrix, orientationAngles)
+                val rawMagneticAzimuthDeg = ((Math.toDegrees(orientationAngles[0].toDouble()).toFloat() + 360f) % 360f)
+                val pitchDeg = Math.toDegrees(orientationAngles[1].toDouble()).toFloat()
+                val rollDeg = Math.toDegrees(orientationAngles[2].toDouble()).toFloat()
+                val rawTilt = hypot(pitchDeg, rollDeg)
+                smoothedTilt = smoothedTilt + 0.2f * (rawTilt - smoothedTilt)
 
                 // Convert Magnetic North to True North using local geomagnetic declination
                 val rawTrueAzimuth = (rawMagneticAzimuthDeg + declinationDeg + 360f) % 360f
 
-                // Circular shortest-path low-pass smoothing (prevents 359° -> 1° jump through 180°)
+                // Shortest-path circular smoothing (prevents 359° -> 1° jump through 180°)
                 smoothedAzimuth = if (smoothedAzimuth.isNaN()) {
                     rawTrueAzimuth
                 } else {
                     val delta = ((rawTrueAzimuth - smoothedAzimuth + 540f) % 360f) - 180f
-                    // Adaptive smoothing: faster response for deliberate turns, smoother when steady
-                    val smoothingGain = if (abs(delta) > 15f) 0.28f else 0.14f
+                    val smoothingGain = if (abs(delta) > 12f) 0.28f else 0.16f
                     (smoothedAzimuth + smoothingGain * delta + 360f) % 360f
                 }
 
@@ -191,6 +204,7 @@ class CompassSensorManager @Inject constructor(
                     CompassReading(
                         azimuthTrueNorth = smoothedAzimuth,
                         accuracy = currentAccuracy,
+                        tiltDegrees = smoothedTilt,
                         isSensorAvailable = true
                     )
                 )
@@ -205,9 +219,8 @@ class CompassSensorManager @Inject constructor(
             }
         }
 
-        if (rotationVectorSensor != null) {
+        if (hasRotationVector && rotationVectorSensor != null) {
             sm.registerListener(listener, rotationVectorSensor, SensorManager.SENSOR_DELAY_GAME)
-            // Also register magnetic field sensor solely to track calibration accuracy
             if (magSensor != null) {
                 sm.registerListener(listener, magSensor, SensorManager.SENSOR_DELAY_UI)
             }

@@ -1,12 +1,6 @@
 <resources>
+    <!-- App & General -->
     <string name="app_name">Islamic App</string>
-    <string name="allow">Allow</string>
-    <string name="leave">Leave</string>
-    <string name="menu_qibla">Qiblah</string>
-    <string name="gps_settings_title">Enable GPS settings</string>
-    <string name="gps_settings_text">App required GPS which is not enabled, you must have to enable it before using the App.</string>
-
-    <!-- Common / General -->
     <string name="back">Back</string>
     <string name="close">Close</string>
     <string name="cancel">Cancel</string>
@@ -23,15 +17,15 @@
     <string name="loading">Loading…</string>
     <string name="no_results_found">No results found</string>
 
-    <!-- Navigation -->
+    <!-- Navigation Bar Labels -->
     <string name="nav_home">Home</string>
-    <string name="nav_prayers">Prayers</string>
     <string name="nav_quran">Quran</string>
     <string name="nav_hadith">Hadith</string>
     <string name="nav_ibadat">Ibadat</string>
+    <string name="nav_more">More</string>
+    <string name="nav_prayers">Prayers</string>
     <string name="nav_qibla">Qibla</string>
     <string name="nav_calendar">Calendar</string>
-    <string name="nav_more">More</string>
     <string name="nav_salah_tracker">Salah Tracker</string>
 
     <!-- Splash Screen -->
@@ -60,6 +54,8 @@
     <string name="home_salah_tracker">Salah Tracker</string>
     <string name="home_al_quran">Al-Quran</string>
     <string name="home_al_hadith">Al-Hadith</string>
+    <string name="home_search_placeholder">Search Surah, Dua, Hadith…</string>
+    <string name="home_read_full">Read Full</string>
 
     <!-- Prayer Names -->
     <string name="prayer_fajr">Fajr</string>
@@ -105,12 +101,10 @@
     <string name="quran_screen_title">The Noble Quran</string>
     <string name="quran_title">Holy Quran (القرآن الكريم)</string>
     <string name="quran_settings">Quran Settings</string>
-    <string name="quran_tab_surah">Surah</string>
     <string name="quran_tab_surahs">Surahs (%1$d)</string>
     <string name="quran_tab_juz">Juz (30)</string>
     <string name="quran_tab_favorites">Favorites (%1$d)</string>
     <string name="quran_tab_bookmarks">Bookmarks (%1$d)</string>
-    <string name="quran_search_hint">Search Surah, Juz, or Ayah…</string>
     <string name="quran_search_placeholder">Search Surah by name, translation, or number…</string>
     <string name="quran_loading_surahs">Loading Holy Quran Surahs…</string>
     <string name="quran_failed_load_surahs">Failed to load Surahs</string>
@@ -122,11 +116,7 @@
     <string name="share_ayah_via">Share Ayah via</string>
     <string name="quran_last_read">LAST READ</string>
     <string name="quran_continue_reading">Continue</string>
-    <string name="quran_verses_count_format">%1$d Verses</string>
-    <string name="quran_juz_number_format">Juz %1$d</string>
-    <string name="quran_surah_number_format">Surah %1$d</string>
     <string name="quran_bismillah_arabic">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</string>
-    <string name="quran_new_surah_started">SURAH %1$d • %2$s</string>
     <string name="quran_new_juz_started">JUZ %1$d • %2$s</string>
     <string name="quran_colored_tajweed">Tajweed Colors</string>
     <string name="quran_tajweed_guide">Tajweed Color Guide</string>
@@ -147,6 +137,14 @@
     <string name="quran_translation_language">Translation Language</string>
     <string name="quran_no_bookmarks">No bookmarked verses yet.</string>
     <string name="quran_tafseer_title">Tafseer &amp; Commentary</string>
+    <string name="quran_transliteration_header">TRANSLITERATION</string>
+    <string name="quran_urdu_header">URDU TRANSLATION • اردو ترجمہ</string>
+    <string name="quran_english_header">ENGLISH TRANSLATION</string>
+    <string name="quran_auto_scroll">Auto-Scroll</string>
+    <string name="quran_scrolling">Scrolling</string>
+    <string name="quran_full_screen">Full Screen</string>
+    <string name="quran_tafseer_btn">Tafseer</string>
+    <string name="quran_translation_btn">Translation</string>
 
     <!-- Hadith Screen -->
     <string name="hadith_screen_title">Prophetic Hadiths</string>
@@ -156,14 +154,10 @@
     <string name="hadith_select_book_subtitle">Select a Hadith collection below to browse its chapters and narrations</string>
     <string name="hadith_open_book">Open Book</string>
     <string name="hadith_all_books">All Books</string>
-    <string name="hadith_search_hint">Search Hadith, narrator, or topic…</string>
     <string name="hadith_search_placeholder">Search Hadith text, chapter, or narrator…</string>
     <string name="hadith_loading">Fetching authentic Hadith collection…</string>
     <string name="hadith_failed_load">Failed to fetch Hadiths</string>
     <string name="hadith_chapters_count">%1$d Chapters</string>
-    <string name="hadith_chapters_count_format">%1$d Chapters</string>
-    <string name="hadith_hadiths_count_format">%1$d Hadiths</string>
-    <string name="hadith_book_number_format">Book %1$s • Hadith %2$s</string>
     <string name="hadith_grade_sahih">Sahih (Authentic)</string>
     <string name="hadith_read_full">Read Full Hadith</string>
     <string name="hadith_copied">Hadith copied to clipboard</string>
@@ -174,38 +168,47 @@
     <string name="ibadat_title">Ibadat &amp; Remembrance (الأذكار والعبادات)</string>
     <string name="ibadat_tab_duas">Fortress of the Muslim (Duas)</string>
     <string name="ibadat_tab_tasbih">Digital Tasbih</string>
-    <string name="duas_categories_title">Dua Categories</string>
-    <string name="duas_categories_subtitle">Select a category to read authentic supplications from Quran &amp; Sunnah</string>
     <string name="duas_select_category_title">Fortress of the Muslim (حصن المسلم)</string>
     <string name="duas_select_category_subtitle">Open any Dua category below to read authentic Quranic &amp; Prophetic supplications</string>
-    <string name="duas_all_categories">Categories</string>
+    <string name="duas_all_categories">All Categories</string>
     <string name="duas_all_categories_card_title">All Fortress Duas</string>
     <string name="duas_open_category">Read Duas</string>
     <string name="duas_count_badge">%1$d Duas</string>
-    <string name="duas_count_format">%1$d Duas</string>
-    <string name="duas_bookmarks_category">Saved / Bookmarked Duas</string>
-    <string name="duas_search_hint">Search Duas by title, Arabic, or translation…</string>
     <string name="duas_search_placeholder">Search Duas in this category…</string>
     <string name="duas_loading">Loading Fortress of the Muslim Duas…</string>
-    <string name="duas_transliteration_label">TRANSLITERATION</string>
-    <string name="duas_translation_label">TRANSLATION</string>
     <string name="duas_reference_label">Reference: %1$s</string>
     <string name="dua_copied">Dua copied to clipboard</string>
     <string name="share_dua_via">Share Dua via</string>
+    <string name="tasbih_reset">Reset</string>
+    <string name="tasbih_target">Target: %1$d</string>
+    <string name="tasbih_sound">Sound</string>
+    <string name="tasbih_vibration">Vibration</string>
+    <string name="tasbih_presets">Dhikr Presets</string>
+    <string name="tasbih_tap_to_count">TAP TO COUNT</string>
 
     <!-- More / Settings Screen -->
     <string name="more_screen_title">Settings &amp; More</string>
     <string name="more_prayer_settings_section">Prayer Calculation Settings</string>
-    <string name="more_typography_section">Arabic Typography &amp; Fonts</string>
-    <string name="more_arabic_font_label">Arabic Script Font</string>
     <string name="more_hijri_adjustment_label">Hijri Date Adjustment</string>
     <string name="more_notifications_label">Prayer Notifications</string>
+    <string name="more_names_of_allah">99 Names of Allah</string>
+    <string name="more_zakat_calculator">Zakat Calculator</string>
+    <string name="more_branding_title">Islamic App • Al-Furqan</string>
+    <string name="more_branding_subtitle">Your Comprehensive Daily Islamic Companion</string>
+    <string name="zakat_gold_silver">Gold &amp; Silver Value</string>
+    <string name="zakat_cash_savings">Cash &amp; Bank Savings</string>
+    <string name="zakat_investments">Investments &amp; Stocks</string>
+    <string name="zakat_total_assets">Total Eligible Assets</string>
+    <string name="zakat_payable">Payable Zakat (2.5%%)</string>
+    <string name="names_allah_title">99 Names of Allah (Asma ul-Husna)</string>
+    <string name="names_allah_subtitle">The Divine Names and Attributes of Allah</string>
 
     <!-- Calendar & Salah Tracker -->
     <string name="calendar_screen_title">Islamic Hijri Calendar</string>
     <string name="calendar_upcoming_events">Upcoming Islamic Events</string>
     <string name="tracker_screen_title">Salah Tracker</string>
     <string name="tracker_weekly_progress">Weekly Prayer Consistency</string>
+    <string name="tracker_today_checklist">Today\'s Salah Checklist</string>
 
     <!-- Alarm Screen -->
     <string name="alarm_dismiss">Dismiss</string>

@@ -27,7 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.sp
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchreLight
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
@@ -35,7 +35,6 @@ import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSageLight
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.domain.model.DuaItem
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
@@ -60,7 +59,7 @@ fun DailyDuaCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .size(34.sdp)
+                            .size(AppDimensions.iconButtonCompact)
                             .clip(CircleShape)
                             .background(DesertOchreLight),
                         contentAlignment = Alignment.Center
@@ -69,10 +68,10 @@ fun DailyDuaCard(
                             imageVector = Icons.Default.Favorite,
                             contentDescription = null,
                             tint = DesertOchre,
-                            modifier = Modifier.size(18.sdp)
+                            modifier = Modifier.size(AppDimensions.iconRegular)
                         )
                     }
-                    Spacer(modifier = Modifier.width(10.sdp))
+                    Spacer(modifier = Modifier.width(AppDimensions.paddingRegular))
                     Column {
                         AppText.TitleMedium(
                             text = "Featured Daily Dua",
@@ -88,11 +87,11 @@ fun DailyDuaCard(
                 }
 
                 // Copy and Share actions
-                Row(horizontalArrangement = Arrangement.spacedBy(6.sdp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingExtraSmall)) {
                     if (dua != null) {
                         Box(
                             modifier = Modifier
-                                .size(30.sdp)
+                                .size(AppDimensions.actionCircleSize)
                                 .clip(CircleShape)
                                 .background(MedinaSageLight)
                                 .clickable {
@@ -105,13 +104,13 @@ fun DailyDuaCard(
                                 imageVector = Icons.Default.ContentCopy,
                                 contentDescription = "Copy Dua",
                                 tint = MedinaSage,
-                                modifier = Modifier.size(15.sdp)
+                                modifier = Modifier.size(AppDimensions.iconSmall)
                             )
                         }
 
                         Box(
                             modifier = Modifier
-                                .size(30.sdp)
+                                .size(AppDimensions.actionCircleSize)
                                 .clip(CircleShape)
                                 .background(DesertOchreLight)
                                 .clickable {
@@ -124,33 +123,33 @@ fun DailyDuaCard(
                                 imageVector = Icons.Default.Share,
                                 contentDescription = "Share Dua",
                                 tint = DesertOchre,
-                                modifier = Modifier.size(15.sdp)
+                                modifier = Modifier.size(AppDimensions.iconSmall)
                             )
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.sdp))
+            Spacer(modifier = Modifier.height(AppDimensions.paddingMediumSmall))
 
             if (dua != null) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.sdp))
+                        .clip(RoundedCornerShape(AppDimensions.cornerMediumLarge))
                         .background(MedinaSageLight.copy(alpha = 0.35f))
-                        .border(0.8.sdp, DesertOchre.copy(alpha = 0.3f), RoundedCornerShape(14.sdp))
-                        .padding(horizontal = 8.sdp, vertical = 6.sdp)
+                        .border(AppDimensions.borderWidthHairline, DesertOchre.copy(alpha = 0.3f), RoundedCornerShape(AppDimensions.cornerMediumLarge))
+                        .padding(horizontal = AppDimensions.paddingSmall, vertical = AppDimensions.paddingExtraSmall)
                 ) {
                     AppText.ArabicText(
                         text = dua.arabicText,
                         color = MedinaSage,
-                        fontSize = 23.sp,
+                        fontSize = AppDimensions.textArabicListTitle,
                         textAlign = TextAlign.Start,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
-                Spacer(modifier = Modifier.height(10.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingRegular))
                 AppText.BodyMedium(
                     text = "\"${dua.translation}\"",
                     color = TextPrimary,

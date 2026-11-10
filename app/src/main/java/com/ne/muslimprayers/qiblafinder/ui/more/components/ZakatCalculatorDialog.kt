@@ -20,7 +20,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,13 +27,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSageLight
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.domain.usecase.zakat.ZakatResult
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
@@ -60,13 +59,13 @@ fun ZakatCalculatorDialog(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
                 .fillMaxHeight(0.85f)
-                .clip(RoundedCornerShape(24.sdp)),
+                .clip(RoundedCornerShape(AppDimensions.cornerDialog)),
             color = PureAlabaster
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(20.sdp)
+                    .padding(AppDimensions.paddingMediumLarge)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -83,63 +82,67 @@ fun ZakatCalculatorDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingMediumSmall))
 
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(10.sdp)
+                    verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingRegular)
                 ) {
                     OutlinedTextField(
                         value = cashSavings,
                         onValueChange = { onInputChange(it, goldValue, silverValue, investments, liabilities) },
-                        label = { Text("Cash Savings & Bank Balance ($)") },
+                        label = { AppText.BodySmall(text = "Cash Savings & Bank Balance (\$)") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
                     OutlinedTextField(
                         value = goldValue,
                         onValueChange = { onInputChange(cashSavings, it, silverValue, investments, liabilities) },
-                        label = { Text("Gold Holdings Value ($)") },
+                        label = { AppText.BodySmall(text = "Gold Holdings Value (\$)") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
                     OutlinedTextField(
                         value = silverValue,
                         onValueChange = { onInputChange(cashSavings, goldValue, it, investments, liabilities) },
-                        label = { Text("Silver Holdings Value ($)") },
+                        label = { AppText.BodySmall(text = "Silver Holdings Value (\$)") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
                     OutlinedTextField(
                         value = investments,
                         onValueChange = { onInputChange(cashSavings, goldValue, silverValue, it, liabilities) },
-                        label = { Text("Stocks & Investments ($)") },
+                        label = { AppText.BodySmall(text = "Stocks & Investments (\$)") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
                     OutlinedTextField(
                         value = liabilities,
                         onValueChange = { onInputChange(cashSavings, goldValue, silverValue, investments, it) },
-                        label = { Text("Debts & Short-term Liabilities ($)") },
+                        label = { AppText.BodySmall(text = "Debts & Short-term Liabilities (\$)") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
 
-                    Spacer(modifier = Modifier.height(8.sdp))
+                    Spacer(modifier = Modifier.height(AppDimensions.paddingSmall))
 
                     Button(
                         onClick = onCalculate,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.sdp),
+                        shape = RoundedCornerShape(AppDimensions.cornerMedium),
                         colors = ButtonDefaults.buttonColors(containerColor = MedinaSage)
                     ) {
-                        Text("Calculate Zakat Due", fontWeight = FontWeight.Bold, color = PureAlabaster)
+                        AppText.ButtonText(
+                            text = "Calculate Zakat Due",
+                            fontWeight = FontWeight.Bold,
+                            color = PureAlabaster
+                        )
                     }
 
                     if (zakatResult != null) {
-                        Spacer(modifier = Modifier.height(12.sdp))
+                        Spacer(modifier = Modifier.height(AppDimensions.paddingMediumSmall))
                         IslamicCard(
                             backgroundColor = MedinaSage,
                             borderColor = DesertOchre.copy(alpha = 0.5f)
@@ -150,12 +153,12 @@ fun ZakatCalculatorDialog(
                                     fontWeight = FontWeight.Bold,
                                     color = PureAlabaster
                                 )
-                                Spacer(modifier = Modifier.height(6.sdp))
+                                Spacer(modifier = Modifier.height(AppDimensions.paddingExtraSmall))
                                 AppText.BodyMedium(
                                     text = "Net Wealth Subject to Zakat: $%.2f".format(Locale.US, zakatResult.netWealth),
                                     color = MedinaSageLight
                                 )
-                                Spacer(modifier = Modifier.height(4.sdp))
+                                Spacer(modifier = Modifier.height(AppDimensions.paddingTiny))
                                 AppText.HeadingLarge(
                                     text = "Zakat Payable (2.5%): $%.2f".format(Locale.US, zakatResult.zakatPayable),
                                     color = DesertOchre

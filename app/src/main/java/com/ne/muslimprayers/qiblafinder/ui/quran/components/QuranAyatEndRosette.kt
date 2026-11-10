@@ -3,8 +3,8 @@ package com.ne.muslimprayers.qiblafinder.ui.quran.components
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -13,17 +13,13 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.PlatformTextStyle
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.LineHeightStyle
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 import com.ne.muslimprayers.qiblafinder.core.theme.QuranFontFamily
+import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 import com.ne.muslimprayers.qiblafinder.ui.quran.util.QuranTextFormatter
 import kotlin.math.cos
 import kotlin.math.sin
@@ -32,17 +28,22 @@ import kotlin.math.sin
  * Authentic Quranic Ayah End Rosette (آیت کا گول دائرہ و نشان)
  * Renders the ornate Islamic circular rosette with the verse number
  * centered precisely INSIDE the circle regardless of selected calligraphic font metrics.
+ *
+ * Supports displaying an end-of-verse special character or Waqf mark
+ * (such as ۘ, ۚ, ۖ, ۗ, ۙ, ؕ, ۩, مـ, ج) floating directly ABOVE the rosette icon.
  */
 @Composable
 fun QuranAyatEndRosette(
     ayahNumber: Int,
     modifier: Modifier = Modifier,
-    size: Dp = 28.dp,
+    size: Dp? = null,
     rosetteColor: Color = DesertOchre,
     textColor: Color = DesertOchre,
-    @Suppress("UNUSED_PARAMETER") fontFamily: FontFamily = QuranFontFamily,
+    endingSpecialMark: String? = null,
+    fontFamily: FontFamily = QuranFontFamily,
     useIndoPakDigits: Boolean = true
 ) {
+    val resolvedSize = size ?: AppDimensions.cornerPill
     val digits = remember(ayahNumber, useIndoPakDigits) {
         if (useIndoPakDigits) {
             val indoPakDigits = charArrayOf('۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹')
@@ -56,64 +57,77 @@ fun QuranAyatEndRosette(
 
     // Dynamic font size depending on digit count so 1, 2, or 3 digits fit inside the ring
     val numberFontSize = when {
-        ayahNumber < 10 -> (size.value * 0.42f).sp
-        ayahNumber < 100 -> (size.value * 0.36f).sp
-        else -> (size.value * 0.30f).sp
+        ayahNumber < 10 -> (resolvedSize.value * 0.42f).sp
+        ayahNumber < 100 -> (resolvedSize.value * 0.36f).sp
+        else -> (resolvedSize.value * 0.30f).sp
     }
 
+    val ringStrokeWidth = AppDimensions.borderWidthThin
+    val hasSpecialMark = !endingSpecialMark.isNullOrBlank()
+    val containerHeight = if (hasSpecialMark) resolvedSize * 1.72f else resolvedSize
+
+    // Symmetric height around the Rosette center guarantees PlaceholderVerticalAlign.TextCenter
+    // always aligns the ornamental Rosette circle identically with the Arabic verse baseline/x-height
+    // while keeping the optional overhead pause/Sajdah symbol cleanly centered in the top headroom.
     Box(
-        modifier = modifier.size(size),
+        modifier = modifier.height(containerHeight),
         contentAlignment = Alignment.Center
     ) {
-        // Draw the ornate 8-point Islamic rosette and inner circle
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val c = Offset(this.size.width / 2f, this.size.height / 2f)
-            val outerRadius = this.size.minDimension * 0.47f
-            val innerRingRadius = this.size.minDimension * 0.38f
-            val strokeWidth = 1.2.dp.toPx()
-
-            // 1. Draw outer 8-crested ornamental rosette petal border
-            val path = Path()
-            val points = 16
-            for (i in 0 until points) {
-                val angle = (i * 360f / points) * (Math.PI / 180f)
-                val r = if (i % 2 == 0) outerRadius * 1.04f else outerRadius * 0.88f
-                val px = c.x + (r * cos(angle)).toFloat()
-                val py = c.y + (r * sin(angle)).toFloat()
-                if (i == 0) path.moveTo(px, py) else path.lineTo(px, py)
-            }
-            path.close()
-            drawPath(
-                path = path,
+        if (hasSpecialMark) {
+            AppText.SpecialMarkBadge(
+                text = endingSpecialMark!!,
+                fontSize = (resolvedSize.value * 0.36f).sp,
                 color = rosetteColor,
-                style = Stroke(width = strokeWidth)
-            )
-
-            // 2. Draw inner circle ring
-            drawCircle(
-                color = rosetteColor.copy(alpha = 0.85f),
-                radius = innerRingRadius,
-                center = c,
-                style = Stroke(width = strokeWidth * 0.85f)
+                fontFamily = fontFamily,
+                modifier = Modifier.align(Alignment.TopCenter)
             )
         }
 
-        // Verse number precisely centered INSIDE the rosette circle using symmetrical system metrics
-        Text(
-            text = digits,
-            style = TextStyle(
-                fontSize = numberFontSize,
-                lineHeight = numberFontSize,
-                fontWeight = FontWeight.Bold,
-                color = textColor,
-                fontFamily = FontFamily.Default,
-                textAlign = TextAlign.Center,
-                platformStyle = PlatformTextStyle(includeFontPadding = false),
-                lineHeightStyle = LineHeightStyle(
-                    alignment = LineHeightStyle.Alignment.Center,
-                    trim = LineHeightStyle.Trim.Both
+        Box(
+            modifier = Modifier
+                .size(resolvedSize)
+                .align(Alignment.Center),
+            contentAlignment = Alignment.Center
+        ) {
+            // Draw the ornate 8-point Islamic rosette and inner circle
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val c = Offset(this.size.width / 2f, this.size.height / 2f)
+                val outerRadius = this.size.minDimension * 0.47f
+                val innerRingRadius = this.size.minDimension * 0.38f
+                val strokePx = ringStrokeWidth.toPx()
+
+                // 1. Draw outer 8-crested ornamental rosette petal border
+                val path = Path()
+                val points = 16
+                for (i in 0 until points) {
+                    val angle = (i * 360f / points) * (Math.PI / 180f)
+                    val r = if (i % 2 == 0) outerRadius * 1.04f else outerRadius * 0.88f
+                    val px = c.x + (r * cos(angle)).toFloat()
+                    val py = c.y + (r * sin(angle)).toFloat()
+                    if (i == 0) path.moveTo(px, py) else path.lineTo(px, py)
+                }
+                path.close()
+                drawPath(
+                    path = path,
+                    color = rosetteColor,
+                    style = Stroke(width = strokePx)
                 )
+
+                // 2. Draw inner circle ring
+                drawCircle(
+                    color = rosetteColor.copy(alpha = 0.85f),
+                    radius = innerRingRadius,
+                    center = c,
+                    style = Stroke(width = strokePx * 0.85f)
+                )
+            }
+
+            // Verse number precisely centered INSIDE the rosette circle using AppText custom view
+            AppText.RosetteNumeral(
+                text = digits,
+                fontSize = numberFontSize,
+                color = textColor
             )
-        )
+        }
     }
 }

@@ -20,14 +20,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchreLight
 import com.ne.muslimprayers.qiblafinder.core.theme.DividerColor
@@ -36,10 +35,9 @@ import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSageLight
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
-import com.ne.muslimprayers.qiblafinder.core.theme.ssp
 import com.ne.muslimprayers.qiblafinder.domain.model.PrayerType
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
+import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
 
 @Composable
 fun WeeklyProgressCard(
@@ -55,20 +53,15 @@ fun WeeklyProgressCard(
         label = "weekly_progress"
     )
 
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(18.sdp))
-            .border(1.sdp, DividerColor, RoundedCornerShape(18.sdp)),
-        shape = RoundedCornerShape(18.sdp),
-        color = PureAlabaster,
-        tonalElevation = 2.sdp
+    IslamicCard(
+        modifier = modifier.fillMaxWidth(),
+        backgroundColor = PureAlabaster,
+        borderColor = DividerColor,
+        cornerRadius = AppDimensions.cornerExtraLarge,
+        contentPadding = AppDimensions.paddingMediumSmall,
+        elevation = AppDimensions.elevationLow
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.sdp)
-        ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -76,11 +69,11 @@ fun WeeklyProgressCard(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.sdp)
+                    horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingSmall)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(32.sdp)
+                            .size(AppDimensions.iconButtonCompact)
                             .clip(CircleShape)
                             .background(DesertOchreLight),
                         contentAlignment = Alignment.Center
@@ -89,7 +82,7 @@ fun WeeklyProgressCard(
                             imageVector = Icons.Default.Star,
                             contentDescription = null,
                             tint = DesertOchre,
-                            modifier = Modifier.size(18.sdp)
+                            modifier = Modifier.size(AppDimensions.iconRegular)
                         )
                     }
 
@@ -108,35 +101,35 @@ fun WeeklyProgressCard(
 
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(12.sdp))
+                        .clip(RoundedCornerShape(AppDimensions.cornerMedium))
                         .background(MedinaSageLight)
-                        .padding(horizontal = 10.sdp, vertical = 4.sdp)
+                        .padding(
+                            horizontal = AppDimensions.paddingRegular,
+                            vertical = AppDimensions.paddingTiny
+                        )
                 ) {
-                    Text(
+                    AppText.BodyMedium(
                         text = "${(percentage * 100).toInt()}%",
                         color = MedinaSage,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.ssp
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.sdp))
+            Spacer(modifier = Modifier.height(AppDimensions.paddingMediumSmall))
 
-            // Animated Progress Bar
             LinearProgressIndicator(
                 progress = { animatedProgress },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(8.sdp)
-                    .clip(RoundedCornerShape(4.sdp)),
+                    .height(AppDimensions.paddingSmall)
+                    .clip(RoundedCornerShape(AppDimensions.cornerMicro)),
                 color = MedinaSage,
                 trackColor = MedinaSageLight
             )
 
-            Spacer(modifier = Modifier.height(14.sdp))
+            Spacer(modifier = Modifier.height(AppDimensions.paddingMediumSmall))
 
-            // 5 Prayers Breakdown Chips Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -170,16 +163,14 @@ private fun PrayerBreakdownItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(
+        AppText.Caption(
             text = name,
-            fontSize = 11.ssp,
             fontWeight = FontWeight.Medium,
             color = TextSecondary
         )
-        Spacer(modifier = Modifier.height(2.sdp))
-        Text(
+        Spacer(modifier = Modifier.height(AppDimensions.paddingMicro))
+        AppText.BodySmall(
             text = "$completed/$total",
-            fontSize = 12.ssp,
             fontWeight = FontWeight.Bold,
             color = if (completed == total && total > 0) MedinaSage else TextPrimary
         )

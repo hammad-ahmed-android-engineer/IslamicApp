@@ -63,16 +63,6 @@ fun ReadingsCard(
                     color = if (isFacingQibla) SuccessGreen else MaterialTheme.colorScheme.onSurface
                 )
             }
-
-            if (state.distanceToKaabaKm > 0.0) {
-                Box(
-                    modifier = Modifier
-                        .width(AppDimensions.borderWidthThin)
-                        .height(AppDimensions.paddingExtraLarge)
-                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-                )
-
-            }
         }
     }
 }

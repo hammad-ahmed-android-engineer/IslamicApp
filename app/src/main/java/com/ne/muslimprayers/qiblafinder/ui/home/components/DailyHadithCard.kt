@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchreLight
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
@@ -37,7 +38,6 @@ import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSageLight
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.domain.model.Hadith
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
@@ -64,7 +64,7 @@ fun DailyHadithCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .size(34.sdp)
+                            .size(AppDimensions.iconButtonCompact)
                             .clip(CircleShape)
                             .background(MedinaSageLight),
                         contentAlignment = Alignment.Center
@@ -73,10 +73,10 @@ fun DailyHadithCard(
                             imageVector = Icons.Default.AutoStories,
                             contentDescription = null,
                             tint = MedinaSage,
-                            modifier = Modifier.size(18.sdp)
+                            modifier = Modifier.size(AppDimensions.iconRegular)
                         )
                     }
-                    Spacer(modifier = Modifier.width(10.sdp))
+                    Spacer(modifier = Modifier.width(AppDimensions.paddingRegular))
                     Column {
                         AppText.TitleMedium(
                             text = "Hadith of the Day",
@@ -92,11 +92,11 @@ fun DailyHadithCard(
                 }
 
                 // Action icons: Copy & Share
-                Row(horizontalArrangement = Arrangement.spacedBy(6.sdp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingExtraSmall)) {
                     if (hadith != null) {
                         Box(
                             modifier = Modifier
-                                .size(30.sdp)
+                                .size(AppDimensions.actionCircleSize)
                                 .clip(CircleShape)
                                 .background(MedinaSageLight)
                                 .clickable {
@@ -109,13 +109,13 @@ fun DailyHadithCard(
                                 imageVector = Icons.Default.ContentCopy,
                                 contentDescription = "Copy Hadith",
                                 tint = MedinaSage,
-                                modifier = Modifier.size(15.sdp)
+                                modifier = Modifier.size(AppDimensions.iconSmall)
                             )
                         }
 
                         Box(
                             modifier = Modifier
-                                .size(30.sdp)
+                                .size(AppDimensions.actionCircleSize)
                                 .clip(CircleShape)
                                 .background(DesertOchreLight)
                                 .clickable {
@@ -128,14 +128,14 @@ fun DailyHadithCard(
                                 imageVector = Icons.Default.Share,
                                 contentDescription = "Share Hadith",
                                 tint = DesertOchre,
-                                modifier = Modifier.size(15.sdp)
+                                modifier = Modifier.size(AppDimensions.iconSmall)
                             )
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.sdp))
+            Spacer(modifier = Modifier.height(AppDimensions.paddingMediumSmall))
 
             if (hadith != null) {
                 AppText.BodyMedium(
@@ -143,7 +143,7 @@ fun DailyHadithCard(
                     color = TextPrimary,
                     maxLines = 4
                 )
-                Spacer(modifier = Modifier.height(8.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingSmall))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,

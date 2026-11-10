@@ -17,21 +17,19 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DividerColor
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSageLight
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
+import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
 
 @Composable
 fun WeeklyNavigationHeader(
@@ -41,26 +39,25 @@ fun WeeklyNavigationHeader(
     onNextWeek: () -> Unit,
     onJumpToToday: () -> Unit
 ) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.sdp))
-            .border(1.sdp, DividerColor, RoundedCornerShape(16.sdp)),
-        shape = RoundedCornerShape(16.sdp),
-        color = PureAlabaster,
-        tonalElevation = 1.sdp
+    IslamicCard(
+        modifier = Modifier.fillMaxWidth(),
+        backgroundColor = PureAlabaster,
+        borderColor = DividerColor,
+        cornerRadius = AppDimensions.cornerLarge,
+        elevation = AppDimensions.elevationSubtle,
+        contentPadding = AppDimensions.paddingZero
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 10.sdp, vertical = 6.sdp),
+                .padding(horizontal = AppDimensions.paddingRegular, vertical = AppDimensions.paddingExtraSmall),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(
                 onClick = onPreviousWeek,
                 modifier = Modifier
-                    .size(34.sdp)
+                    .size(AppDimensions.iconButtonCompact)
                     .clip(CircleShape)
                     .background(MedinaSageLight)
             ) {
@@ -68,13 +65,13 @@ fun WeeklyNavigationHeader(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Previous Week",
                     tint = MedinaSage,
-                    modifier = Modifier.size(18.sdp)
+                    modifier = Modifier.size(AppDimensions.iconRegular)
                 )
             }
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.sdp)
+                horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingSmall)
             ) {
                 AppText.TitleMedium(
                     text = weekRangeText,
@@ -85,27 +82,26 @@ fun WeeklyNavigationHeader(
                 if (weekOffset != 0) {
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(12.sdp))
+                            .clip(RoundedCornerShape(AppDimensions.cornerMedium))
                             .background(MedinaSage)
                             .clickableDebounced { onJumpToToday() }
-                            .padding(horizontal = 8.sdp, vertical = 4.sdp),
+                            .padding(horizontal = AppDimensions.paddingSmall, vertical = AppDimensions.paddingTiny),
                         contentAlignment = Alignment.Center
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.sdp)
+                            horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingTiny)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Today,
                                 contentDescription = null,
                                 tint = PureAlabaster,
-                                modifier = Modifier.size(12.sdp)
+                                modifier = Modifier.size(AppDimensions.iconTiny)
                             )
-                            Text(
+                            AppText.LabelSmall(
                                 text = "Today",
                                 color = PureAlabaster,
-                                fontWeight = FontWeight.Bold,
-                                style = androidx.compose.material3.MaterialTheme.typography.labelSmall
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }
@@ -115,7 +111,7 @@ fun WeeklyNavigationHeader(
             IconButton(
                 onClick = onNextWeek,
                 modifier = Modifier
-                    .size(34.sdp)
+                    .size(AppDimensions.iconButtonCompact)
                     .clip(CircleShape)
                     .background(MedinaSageLight)
             ) {
@@ -123,7 +119,7 @@ fun WeeklyNavigationHeader(
                     imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                     contentDescription = "Next Week",
                     tint = MedinaSage,
-                    modifier = Modifier.size(18.sdp)
+                    modifier = Modifier.size(AppDimensions.iconRegular)
                 )
             }
         }

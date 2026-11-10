@@ -27,7 +27,6 @@ import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,8 +36,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -46,6 +45,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.ne.muslimprayers.qiblafinder.R
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 import com.ne.muslimprayers.qiblafinder.core.theme.DividerColor
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
@@ -53,7 +53,7 @@ import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSageLight
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
 import com.ne.muslimprayers.qiblafinder.core.theme.WarmParchment
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
+import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 import com.ne.muslimprayers.qiblafinder.ui.alarm.PrayerAlarmScreen
 import com.ne.muslimprayers.qiblafinder.ui.calendar.CalendarScreen
 import com.ne.muslimprayers.qiblafinder.ui.compass.CompassScreen
@@ -98,7 +98,7 @@ fun AppNavigation(
                     modifier = Modifier
                         .fillMaxHeight()
                         .border(
-                            width = 1.sdp,
+                            width = AppDimensions.borderWidthThin,
                             color = DividerColor
                         ),
                     containerColor = PureAlabaster,
@@ -107,14 +107,14 @@ fun AppNavigation(
                             painter = painterResource(id = R.mipmap.icon),
                             contentDescription = "App Icon",
                             modifier = Modifier
-                                .padding(vertical = 12.sdp)
-                                .size(36.sdp)
+                                .padding(vertical = AppDimensions.paddingMediumSmall)
+                                .size(AppDimensions.iconExtraLarge)
                                 .clip(CircleShape)
-                                .border(1.sdp, DesertOchre, CircleShape)
+                                .border(AppDimensions.borderWidthThin, DesertOchre, CircleShape)
                         )
                     }
                 ) {
-                    Spacer(modifier = Modifier.height(8.sdp))
+                    Spacer(modifier = Modifier.height(AppDimensions.paddingSmall))
                     bottomNavItems.forEach { item ->
                         val selected = currentRoute == item.route
                         NavigationRailItem(
@@ -131,13 +131,14 @@ fun AppNavigation(
                             icon = {
                                 Icon(
                                     imageVector = item.icon,
-                                    contentDescription = item.title
+                                    contentDescription = stringResource(item.titleRes)
                                 )
                             },
                             label = {
-                                Text(
-                                    text = item.title,
-                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                                AppText.Caption(
+                                    text = stringResource(item.titleRes),
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                    maxLines = 1
                                 )
                             },
                             colors = NavigationRailItemDefaults.colors(
@@ -174,14 +175,22 @@ fun AppNavigation(
                 ) {
                     NavigationBar(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(topStart = 18.sdp, topEnd = 18.sdp))
+                            .clip(
+                                RoundedCornerShape(
+                                    topStart = AppDimensions.cornerExtraLarge,
+                                    topEnd = AppDimensions.cornerExtraLarge
+                                )
+                            )
                             .border(
-                                width = 1.sdp,
+                                width = AppDimensions.borderWidthThin,
                                 color = DividerColor,
-                                shape = RoundedCornerShape(topStart = 18.sdp, topEnd = 18.sdp)
+                                shape = RoundedCornerShape(
+                                    topStart = AppDimensions.cornerExtraLarge,
+                                    topEnd = AppDimensions.cornerExtraLarge
+                                )
                             ),
                         containerColor = PureAlabaster,
-                        tonalElevation = 6.sdp,
+                        tonalElevation = AppDimensions.elevationMedium,
                         windowInsets = WindowInsets(0, 0, 0, 0)
                     ) {
                         bottomNavItems.forEach { item ->
@@ -200,13 +209,14 @@ fun AppNavigation(
                                 icon = {
                                     Icon(
                                         imageVector = item.icon,
-                                        contentDescription = item.title
+                                        contentDescription = stringResource(item.titleRes)
                                     )
                                 },
                                 label = {
-                                    Text(
-                                        text = item.title,
-                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                                    AppText.Caption(
+                                        text = stringResource(item.titleRes),
+                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                        maxLines = 1
                                     )
                                 },
                                 colors = NavigationBarItemDefaults.colors(
@@ -227,7 +237,7 @@ fun AppNavigation(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = if (showNavBars) innerPadding.calculateBottomPadding() else 0.dp)
+                    .padding(bottom = if (showNavBars) innerPadding.calculateBottomPadding() else AppDimensions.paddingZero)
             ) {
                 AppNavHost(
                     navController = navController,

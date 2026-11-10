@@ -32,7 +32,6 @@ import com.ne.muslimprayers.qiblafinder.R
 import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.core.utils.clickableDebounced
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 
@@ -123,7 +122,7 @@ fun CalculationMethodDialog(
 
                 Column(
                     modifier = Modifier
-                        .heightIn(max = 320.sdp)
+                        .heightIn(max = AppDimensions.dialogContentMaxHeightExpanded)
                         .verticalScroll(rememberScrollState())
                 ) {
                     methods.forEachIndexed { index, name ->

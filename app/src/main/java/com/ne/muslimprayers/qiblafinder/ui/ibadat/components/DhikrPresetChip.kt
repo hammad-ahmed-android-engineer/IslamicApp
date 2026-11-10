@@ -11,11 +11,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DividerColor
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 
 @Composable
@@ -28,18 +28,21 @@ fun DhikrPresetChip(
 ) {
     Surface(
         modifier = Modifier
-            .clip(RoundedCornerShape(16.sdp))
+            .clip(RoundedCornerShape(AppDimensions.cornerLarge))
             .clickableDebounced { onClick() }
             .border(
-                width = 1.sdp,
+                width = AppDimensions.borderWidthThin,
                 color = if (isSelected) MedinaSage else DividerColor,
-                shape = RoundedCornerShape(16.sdp)
+                shape = RoundedCornerShape(AppDimensions.cornerLarge)
             ),
-        shape = RoundedCornerShape(16.sdp),
+        shape = RoundedCornerShape(AppDimensions.cornerLarge),
         color = if (isSelected) MedinaSage else PureAlabaster
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 14.sdp, vertical = 8.sdp),
+            modifier = Modifier.padding(
+                horizontal = AppDimensions.paddingMediumSmall,
+                vertical = AppDimensions.paddingSmall
+            ),
             verticalAlignment = Alignment.CenterVertically
         ) {
             AppText.BodyMedium(

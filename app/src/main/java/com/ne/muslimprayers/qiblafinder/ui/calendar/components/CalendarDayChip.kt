@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 import com.ne.muslimprayers.qiblafinder.core.theme.DividerColor
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
@@ -27,7 +28,6 @@ import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSageLight
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.domain.model.IslamicCalendarInfo
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 
@@ -41,21 +41,21 @@ fun CalendarDayChip(
 
     Surface(
         modifier = Modifier
-            .width(64.sdp)
-            .height(84.sdp)
-            .clip(RoundedCornerShape(18.sdp))
+            .width(AppDimensions.calendarDayChipWidth)
+            .height(AppDimensions.calendarDayChipHeight)
+            .clip(RoundedCornerShape(AppDimensions.cornerExtraLarge))
             .clickableDebounced { onClick() }
             .border(
-                width = if (isSelected) 1.5.sdp else 0.8.sdp,
+                width = if (isSelected) AppDimensions.borderWidthMedium else AppDimensions.borderWidthHairline,
                 color = if (isSelected) MedinaSage else if (hasHoliday) DesertOchre else DividerColor,
-                shape = RoundedCornerShape(18.sdp)
+                shape = RoundedCornerShape(AppDimensions.cornerExtraLarge)
             ),
-        shape = RoundedCornerShape(18.sdp),
+        shape = RoundedCornerShape(AppDimensions.cornerExtraLarge),
         color = if (isSelected) MedinaSage else if (hasHoliday) MedinaSageLight else PureAlabaster,
-        tonalElevation = 1.sdp
+        tonalElevation = AppDimensions.elevationSubtle
     ) {
         Column(
-            modifier = Modifier.padding(8.sdp),
+            modifier = Modifier.padding(AppDimensions.paddingSmall),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
@@ -75,9 +75,9 @@ fun CalendarDayChip(
                         imageVector = Icons.Default.Star,
                         contentDescription = "Holiday",
                         tint = DesertOchre,
-                        modifier = Modifier.size(12.sdp)
+                        modifier = Modifier.size(AppDimensions.iconTiny)
                     )
-                    Spacer(modifier = Modifier.width(2.sdp))
+                    Spacer(modifier = Modifier.width(AppDimensions.paddingMicro))
                 }
                 AppText.BodySmall(
                     text = "${dayInfo.hijriDay}",

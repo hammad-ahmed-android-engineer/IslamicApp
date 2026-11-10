@@ -30,7 +30,6 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
@@ -39,20 +38,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
-import androidx.compose.ui.text.PlatformTextStyle
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.LineBreak
-import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.ArabicFontManager
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchreLight
@@ -62,10 +58,9 @@ import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSageLight
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
-import com.ne.muslimprayers.qiblafinder.core.theme.UrduTranslationFontFamily
 import com.ne.muslimprayers.qiblafinder.core.theme.WarmParchment
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.domain.model.Ayah
+import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
 import com.ne.muslimprayers.qiblafinder.ui.quran.util.QuranTextFormatter
 
@@ -99,17 +94,9 @@ fun AyahCardItem(
     }
 
     val isIndoPakEffective = fontConfig.prefersIndoPakScript && ayah.indopakText.isNotBlank()
-    val targetArabicText = if (isIndoPakEffective) {
-        ayah.indopakText
-    } else {
-        ayah.arabicText
-    }
+    val targetArabicText = if (isIndoPakEffective) ayah.indopakText else ayah.arabicText
 
-    val scaledFontSize = arabicFontSize * fontConfig.fontSizeScale
-    val scaledLineHeight = scaledFontSize * fontConfig.lineHeightMultiplier
-
-    // Formatted annotated string with Tajweed colors, Waqf marks, and inline Ayah End placeholder
-    val formattedArabicText = remember(
+    val formattedAyahResult = remember(
         targetArabicText,
         ayah.numberInSurah,
         effectiveSurahNumber,
@@ -121,37 +108,95 @@ fun AyahCardItem(
             ayahNumberInSurah = ayah.numberInSurah,
             surahNumber = effectiveSurahNumber,
             isColored = isColoredQuran,
-            waqfHighlightColor = DesertOchre,
+            waqfHighlightColor = QuranTextFormatter.TAJWEED_WAQF_COLOR,
             fontKey = selectedQuranFont
         )
     }
 
-    val rosetteSize = (arabicFontSize * 1.18f).coerceIn(24f, 40f)
+    val formattedArabicText = formattedAyahResult.annotatedString
+    val endingSpecialMark = formattedAyahResult.endingSpecialMark
+
+    val density = LocalDensity.current
+    val scaledArabicSize = arabicFontSize * fontConfig.fontSizeScale
+    val rosetteSize = (scaledArabicSize * 1.05f).coerceIn(24f, 40f)
+    val rosetteWidth = if (!endingSpecialMark.isNullOrBlank() && endingSpecialMark.length > 1) {
+        rosetteSize * 1.24f
+    } else {
+        rosetteSize * 1.08f
+    }
+    val inlinePlaceholderHeight = if (!endingSpecialMark.isNullOrBlank()) rosetteSize * 1.72f else rosetteSize
+    val rosetteWidthSp = with(density) { rosetteWidth.dp.toSp() }
+    val rosetteHeightSp = with(density) { inlinePlaceholderHeight.dp.toSp() }
+    val waqfBadgeColor = if (isColoredQuran) QuranTextFormatter.TAJWEED_WAQF_COLOR else TextPrimary
+
     val inlineContent = remember(
         ayah.numberInSurah,
         rosetteSize,
+        rosetteWidthSp,
+        rosetteHeightSp,
+        arabicFontSize,
         selectedFontFamily,
         isIndoPakEffective,
-        isColoredQuran
+        isColoredQuran,
+        endingSpecialMark,
+        waqfBadgeColor
     ) {
-        mapOf(
-            QuranTextFormatter.INLINE_AYAH_END_ID to InlineTextContent(
-                Placeholder(
-                    width = rosetteSize.sp,
-                    height = rosetteSize.sp,
-                    placeholderVerticalAlign = PlaceholderVerticalAlign.Center
-                )
-            ) {
-                QuranAyatEndRosette(
-                    ayahNumber = ayah.numberInSurah,
-                    size = rosetteSize.dp,
-                    rosetteColor = if (isColoredQuran) DesertOchre else TextPrimary,
-                    textColor = if (isColoredQuran) DesertOchre else TextPrimary,
-                    fontFamily = selectedFontFamily,
-                    useIndoPakDigits = isIndoPakEffective
+        buildMap {
+            put(
+                QuranTextFormatter.INLINE_AYAH_END_ID,
+                InlineTextContent(
+                    Placeholder(
+                        width = rosetteWidthSp,
+                        height = rosetteHeightSp,
+                        placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter
+                    )
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        QuranAyatEndRosette(
+                            ayahNumber = ayah.numberInSurah,
+                            size = rosetteSize.dp,
+                            rosetteColor = if (isColoredQuran) DesertOchre else TextPrimary,
+                            textColor = if (isColoredQuran) DesertOchre else TextPrimary,
+                            endingSpecialMark = endingSpecialMark,
+                            fontFamily = selectedFontFamily,
+                            useIndoPakDigits = isIndoPakEffective
+                        )
+                    }
+                }
+            )
+
+            QuranTextFormatter.WAQF_INLINE_ENTRIES.forEach { (id, label) ->
+                val widthFactor = if (label.length > 1) 1.05f else 0.72f
+                put(
+                    id,
+                    InlineTextContent(
+                        Placeholder(
+                            width = (arabicFontSize * widthFactor).sp,
+                            height = (arabicFontSize * 1.10f).sp,
+                            placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter
+                        )
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .fillMaxHeight()
+                                .padding(bottom = AppDimensions.paddingTiny),
+                            contentAlignment = Alignment.TopCenter
+                        ) {
+                            AppText.SpecialMarkBadge(
+                                text = label,
+                                fontSize = (arabicFontSize * 0.44f).coerceIn(11f, 18f).sp,
+                                color = waqfBadgeColor,
+                                fontFamily = selectedFontFamily
+                            )
+                        }
+                    }
                 )
             }
-        )
+        }
     }
 
     val hasAnyTranslationVisible =
@@ -169,62 +214,74 @@ fun AyahCardItem(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.sdp))
+                    .clip(RoundedCornerShape(AppDimensions.cornerMedium))
                     .background(
                         if (isPlaying) PureAlabaster.copy(alpha = 0.85f)
                         else WarmParchment.copy(alpha = 0.65f)
                     )
                     .border(
-                        width = 0.8.dp,
+                        width = AppDimensions.borderWidthHairline,
                         color = if (isPlaying) MedinaSage.copy(alpha = 0.35f) else DividerColor.copy(alpha = 0.7f),
-                        shape = RoundedCornerShape(12.sdp)
+                        shape = RoundedCornerShape(AppDimensions.cornerMedium)
                     )
-                    .padding(horizontal = 8.sdp, vertical = 6.sdp),
+                    .padding(
+                        horizontal = AppDimensions.paddingSmall,
+                        vertical = AppDimensions.paddingExtraSmall
+                    ),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Left: Surah:Ayah Badge & Juz Tag
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.sdp)
+                    horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingExtraSmall)
                 ) {
                     Surface(
                         color = MedinaSage,
-                        shape = RoundedCornerShape(8.sdp)
+                        shape = RoundedCornerShape(AppDimensions.cornerSmall)
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 9.sdp, vertical = 4.sdp),
+                            modifier = Modifier.padding(
+                                horizontal = AppDimensions.paddingRegular,
+                                vertical = AppDimensions.paddingTiny
+                            ),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(3.sdp)
+                            horizontalArrangement = Arrangement.spacedBy(AppDimensions.accentBarWidth)
                         ) {
-                            Text(
+                            AppText.BodySmall(
                                 text = "$effectiveSurahNumber:${ayah.numberInSurah}",
-                                fontSize = 12.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = PureAlabaster
                             )
                         }
                     }
 
-                    Surface(
-                        color = DesertOchreLight.copy(alpha = 0.85f),
-                        shape = RoundedCornerShape(6.sdp),
-                        border = BorderStroke(0.6.dp, DesertOchre.copy(alpha = 0.3f))
-                    ) {
-                        Text(
-                            text = "Juz ${ayah.juz}",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = DesertOchre,
-                            modifier = Modifier.padding(horizontal = 7.sdp, vertical = 3.sdp)
-                        )
+                    if (ayah.juz > 0) {
+                        Surface(
+                            color = DesertOchreLight.copy(alpha = 0.85f),
+                            shape = RoundedCornerShape(AppDimensions.cornerExtraSmall),
+                            border = BorderStroke(
+                                AppDimensions.borderWidthHairline,
+                                DesertOchre.copy(alpha = 0.3f)
+                            )
+                        ) {
+                            AppText.Caption(
+                                text = "Juz ${ayah.juz}",
+                                fontWeight = FontWeight.SemiBold,
+                                color = DesertOchre,
+                                modifier = Modifier.padding(
+                                    horizontal = AppDimensions.paddingSmall,
+                                    vertical = AppDimensions.paddingTiny
+                                )
+                            )
+                        }
                     }
                 }
 
                 // Right: Compact Circular Action Buttons (Play, Tafseer, Bookmark, Copy, Share)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.sdp)
+                    horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingTiny)
                 ) {
                     AyahActionCircleButton(
                         icon = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
@@ -264,85 +321,61 @@ fun AyahCardItem(
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.sdp))
+            Spacer(modifier = Modifier.height(AppDimensions.paddingRegular))
 
             // 2. Sacred Quranic Arabic Verse Container with safe per-font overhang padding & RTL layout
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.sdp))
+                    .clip(RoundedCornerShape(AppDimensions.cornerMediumLarge))
                     .background(
                         if (isPlaying) PureAlabaster.copy(alpha = 0.9f)
                         else WarmParchment.copy(alpha = 0.45f)
                     )
                     .border(
-                        width = 0.9.dp,
+                        width = AppDimensions.borderWidthHairline,
                         color = if (isPlaying) MedinaSage.copy(alpha = 0.4f) else DesertOchre.copy(alpha = 0.28f),
-                        shape = RoundedCornerShape(14.sdp)
+                        shape = RoundedCornerShape(AppDimensions.cornerMediumLarge)
                     )
                     .padding(
                         horizontal = (fontConfig.horizontalSafePaddingDp + 2f).dp,
                         vertical = (fontConfig.verticalSafePaddingDp + 6f).dp
                     )
             ) {
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                    Text(
-                        text = formattedArabicText,
-                        inlineContent = inlineContent,
-                        style = TextStyle(
-                            fontFamily = selectedFontFamily,
-                            fontSize = scaledFontSize.sp,
-                            lineHeight = scaledLineHeight.sp,
-                            color = TextPrimary,
-                            textAlign = TextAlign.Start,
-                            textDirection = TextDirection.Rtl,
-                            lineBreak = LineBreak.Simple,
-                            platformStyle = PlatformTextStyle(includeFontPadding = true),
-                            lineHeightStyle = LineHeightStyle(
-                                alignment = LineHeightStyle.Alignment.Center,
-                                trim = LineHeightStyle.Trim.None
-                            )
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+                AppText.AnnotatedArabicText(
+                    text = formattedArabicText,
+                    inlineContent = inlineContent,
+                    fontSize = arabicFontSize.sp,
+                    color = TextPrimary,
+                    textAlign = TextAlign.Start,
+                    fontKeyOverride = selectedQuranFont,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             // 3. Translations & Transliteration Section
             if (hasAnyTranslationVisible) {
-                Spacer(modifier = Modifier.height(10.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingRegular))
                 HorizontalDivider(
                     color = DividerColor.copy(alpha = 0.55f),
-                    thickness = 0.8.dp
+                    thickness = AppDimensions.dividerHairline
                 )
-                Spacer(modifier = Modifier.height(10.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingRegular))
 
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(10.sdp)
+                    verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingRegular)
                 ) {
                     // Transliteration (Phonetic Latin)
                     if (showTransliteration && ayah.transliteration.isNotBlank()) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(IntrinsicSize.Min)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .width(3.sdp)
-                                    .fillMaxHeight()
-                                    .clip(RoundedCornerShape(2.sdp))
-                                    .background(DesertOchre.copy(alpha = 0.65f))
-                            )
-                            Spacer(modifier = Modifier.width(8.sdp))
-                            Text(
+                        AyahAccentQuoteRow(accentColor = DesertOchre.copy(alpha = 0.65f)) {
+                            AppText.BodySmall(
                                 text = ayah.transliteration,
-                                fontSize = (translationFontSize * 0.92f).sp,
-                                lineHeight = (translationFontSize * 1.4f).sp,
+                                fontSizeOverride = (translationFontSize * 0.92f).sp,
+                                lineHeightOverride = (translationFontSize * 1.4f).sp,
                                 fontStyle = FontStyle.Italic,
                                 color = MedinaSage,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.fillMaxWidth()
                             )
                         }
                     }
@@ -350,39 +383,18 @@ fun AyahCardItem(
                     // Urdu Translation (Nastaleeq script) scaled dynamically with translationFontSize
                     if (showUrduTranslation && ayah.urduText.isNotBlank()) {
                         val urduSize = (translationFontSize * 1.2f).coerceIn(14f, 32f)
-                        val urduLineHeight = (urduSize * 1.95f)
+                        val urduLineHeight = urduSize * 1.95f
                         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(IntrinsicSize.Min)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .width(3.sdp)
-                                        .fillMaxHeight()
-                                        .clip(RoundedCornerShape(2.sdp))
-                                        .background(DesertOchre.copy(alpha = 0.55f))
-                                )
-                                Spacer(modifier = Modifier.width(8.sdp))
-                                Text(
+                            AyahAccentQuoteRow(accentColor = DesertOchre.copy(alpha = 0.55f)) {
+                                AppText.UrduText(
                                     text = ayah.urduText,
-                                    style = TextStyle(
-                                        fontFamily = UrduTranslationFontFamily,
-                                        fontSize = urduSize.sp,
-                                        lineHeight = urduLineHeight.sp,
-                                        color = TextPrimary,
-                                        textAlign = TextAlign.Start,
-                                        textDirection = TextDirection.Rtl,
-                                        platformStyle = PlatformTextStyle(includeFontPadding = true),
-                                        lineHeightStyle = LineHeightStyle(
-                                            alignment = LineHeightStyle.Alignment.Center,
-                                            trim = LineHeightStyle.Trim.None
-                                        )
-                                    ),
+                                    fontSize = urduSize.sp,
+                                    lineHeight = urduLineHeight.sp,
+                                    color = TextPrimary,
+                                    textAlign = TextAlign.Start,
                                     modifier = Modifier
-                                        .weight(1f)
-                                        .padding(vertical = 2.sdp)
+                                        .fillMaxWidth()
+                                        .padding(vertical = AppDimensions.paddingMicro)
                                 )
                             }
                         }
@@ -391,33 +403,45 @@ fun AyahCardItem(
                     // English Translation (Saheeh International) scaled dynamically with translationFontSize
                     if (showTranslation && ayah.englishText.isNotBlank()) {
                         val engSize = translationFontSize.coerceIn(12f, 26f)
-                        val engLineHeight = (engSize * 1.48f)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(IntrinsicSize.Min)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .width(3.sdp)
-                                    .fillMaxHeight()
-                                    .clip(RoundedCornerShape(2.sdp))
-                                    .background(MedinaSage.copy(alpha = 0.55f))
-                            )
-                            Spacer(modifier = Modifier.width(8.sdp))
-                            Text(
+                        val engLineHeight = engSize * 1.48f
+                        AyahAccentQuoteRow(accentColor = MedinaSage.copy(alpha = 0.55f)) {
+                            AppText.BodyMedium(
                                 text = ayah.englishText,
-                                fontSize = engSize.sp,
-                                lineHeight = engLineHeight.sp,
+                                fontSizeOverride = engSize.sp,
+                                lineHeightOverride = engLineHeight.sp,
                                 color = TextSecondary,
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .padding(vertical = 1.sdp)
+                                    .fillMaxWidth()
+                                    .padding(vertical = AppDimensions.paddingHairline)
                             )
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun AyahAccentQuoteRow(
+    accentColor: Color,
+    content: @Composable () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
+    ) {
+        Box(
+            modifier = Modifier
+                .width(AppDimensions.accentBarWidth)
+                .fillMaxHeight()
+                .clip(RoundedCornerShape(AppDimensions.cornerMicro))
+                .background(accentColor)
+        )
+        Spacer(modifier = Modifier.width(AppDimensions.paddingSmall))
+        Box(modifier = Modifier.weight(1f)) {
+            content()
         }
     }
 }
@@ -432,10 +456,10 @@ private fun AyahActionCircleButton(
 ) {
     Box(
         modifier = Modifier
-            .size(30.sdp)
+            .size(AppDimensions.actionCircleSize)
             .clip(CircleShape)
             .background(containerColor)
-            .border(0.6.dp, DividerColor.copy(alpha = 0.6f), CircleShape)
+            .border(AppDimensions.borderWidthHairline, DividerColor.copy(alpha = 0.6f), CircleShape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
@@ -443,7 +467,7 @@ private fun AyahActionCircleButton(
             imageVector = icon,
             contentDescription = contentDescription,
             tint = tint,
-            modifier = Modifier.size(16.sdp)
+            modifier = Modifier.size(AppDimensions.iconSmall)
         )
     }
 }

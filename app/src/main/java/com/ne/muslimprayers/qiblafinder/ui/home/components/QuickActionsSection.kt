@@ -15,8 +15,8 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 import com.ne.muslimprayers.qiblafinder.ui.components.QuickActionCard
 
@@ -33,11 +33,11 @@ fun QuickActionsSection(
             text = "Islamic Tools",
             fontWeight = FontWeight.Bold,
             color = TextPrimary,
-            modifier = Modifier.padding(bottom = 10.sdp)
+            modifier = Modifier.padding(bottom = AppDimensions.paddingRegular)
         )
 
         Row(
-            horizontalArrangement = Arrangement.spacedBy(10.sdp),
+            horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingRegular),
             modifier = Modifier.fillMaxWidth()
         ) {
             QuickActionCard(
@@ -56,10 +56,10 @@ fun QuickActionsSection(
             )
         }
 
-        Spacer(modifier = Modifier.height(10.sdp))
+        Spacer(modifier = Modifier.height(AppDimensions.paddingRegular))
 
         Row(
-            horizontalArrangement = Arrangement.spacedBy(10.sdp),
+            horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingRegular),
             modifier = Modifier.fillMaxWidth()
         ) {
             QuickActionCard(

@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 import com.ne.muslimprayers.qiblafinder.core.theme.DividerColor
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
@@ -39,7 +40,6 @@ import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSageLight
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 import com.ne.muslimprayers.qiblafinder.ui.more.NameOfAllah
 
@@ -58,13 +58,13 @@ fun NamesOfAllahDialog(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
                 .fillMaxHeight(0.88f)
-                .clip(RoundedCornerShape(24.sdp)),
+                .clip(RoundedCornerShape(AppDimensions.cornerDialog)),
             color = PureAlabaster
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.sdp)
+                    .padding(AppDimensions.paddingMedium)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -76,9 +76,9 @@ fun NamesOfAllahDialog(
                             imageVector = Icons.Default.AutoAwesome,
                             contentDescription = null,
                             tint = DesertOchre,
-                            modifier = Modifier.size(24.sdp)
+                            modifier = Modifier.size(AppDimensions.iconLarge)
                         )
-                        Spacer(modifier = Modifier.width(8.sdp))
+                        Spacer(modifier = Modifier.width(AppDimensions.paddingSmall))
                         AppText.HeadingLarge(
                             text = "99 Names of Allah (أسماء الله الحسنى)",
                             color = TextPrimary,
@@ -90,30 +90,30 @@ fun NamesOfAllahDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingMediumSmall))
 
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
-                    horizontalArrangement = Arrangement.spacedBy(10.sdp),
-                    verticalArrangement = Arrangement.spacedBy(10.sdp),
+                    horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingRegular),
+                    verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingRegular),
                     modifier = Modifier.weight(1f)
                 ) {
                     items(names) { item ->
                         val isPlaying = playingNameId == item.id
                         Surface(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(16.sdp))
+                                .clip(RoundedCornerShape(AppDimensions.cornerLarge))
                                 .clickableDebounced { onPlayAudio(item) }
                                 .border(
-                                    width = 1.sdp,
+                                    width = AppDimensions.borderWidthThin,
                                     color = if (isPlaying) MedinaSage else DividerColor,
-                                    shape = RoundedCornerShape(16.sdp)
+                                    shape = RoundedCornerShape(AppDimensions.cornerLarge)
                                 ),
-                            shape = RoundedCornerShape(16.sdp),
+                            shape = RoundedCornerShape(AppDimensions.cornerLarge),
                             color = if (isPlaying) MedinaSage else PureAlabaster
                         ) {
                             Row(
-                                modifier = Modifier.padding(12.sdp),
+                                modifier = Modifier.padding(AppDimensions.paddingMediumSmall),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
@@ -140,7 +140,7 @@ fun NamesOfAllahDialog(
                                     imageVector = if (isPlaying) Icons.Default.StopCircle else Icons.Default.PlayCircle,
                                     contentDescription = "Play",
                                     tint = if (isPlaying) DesertOchre else MedinaSage,
-                                    modifier = Modifier.size(24.sdp)
+                                    modifier = Modifier.size(AppDimensions.iconLarge)
                                 )
                             }
                         }

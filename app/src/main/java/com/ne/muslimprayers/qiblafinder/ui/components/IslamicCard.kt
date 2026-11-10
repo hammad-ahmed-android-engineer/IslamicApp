@@ -20,8 +20,10 @@ fun IslamicCard(
     modifier: Modifier = Modifier,
     backgroundColor: Color = PureAlabaster,
     borderColor: Color = DividerColor,
+    borderWidth: Dp = AppDimensions.borderWidthThin,
     cornerRadius: Dp = AppDimensions.cornerExtraLarge,
     contentPadding: Dp = AppDimensions.paddingMedium,
+    elevation: Dp = AppDimensions.elevationLow,
     onClick: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
@@ -37,13 +39,13 @@ fun IslamicCard(
         modifier = clickableModifier
             .clip(shape)
             .border(
-                width = AppDimensions.borderWidthThin,
+                width = borderWidth,
                 color = borderColor,
                 shape = shape
             ),
         shape = shape,
         color = backgroundColor,
-        tonalElevation = AppDimensions.elevationLow
+        tonalElevation = elevation
     ) {
         Box(modifier = Modifier.padding(contentPadding)) {
             content()

@@ -1,7 +1,6 @@
 package com.ne.muslimprayers.qiblafinder.ui.more.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import com.ne.muslimprayers.qiblafinder.core.utils.clickableDebounced
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,23 +11,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DividerColor
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSageLight
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
+import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
 
 @Composable
 fun MoreSettingItem(
@@ -37,29 +35,23 @@ fun MoreSettingItem(
     icon: ImageVector,
     onClick: () -> Unit
 ) {
-    Surface(
+    IslamicCard(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.sdp))
-            .clickableDebounced { onClick() }
-            .border(
-                width = 1.sdp,
-                color = DividerColor,
-                shape = RoundedCornerShape(16.sdp)
-            ),
-        shape = RoundedCornerShape(16.sdp),
-        color = PureAlabaster,
-        tonalElevation = 1.sdp
+            .clickableDebounced { onClick() },
+        backgroundColor = PureAlabaster,
+        borderColor = DividerColor,
+        cornerRadius = AppDimensions.cornerLarge,
+        elevation = AppDimensions.elevationSubtle,
+        contentPadding = AppDimensions.paddingMediumSmall
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.sdp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.sdp)
+                    .size(AppDimensions.avatarSize)
                     .clip(CircleShape)
                     .background(MedinaSageLight),
                 contentAlignment = Alignment.Center
@@ -68,10 +60,10 @@ fun MoreSettingItem(
                     imageVector = icon,
                     contentDescription = null,
                     tint = MedinaSage,
-                    modifier = Modifier.size(20.sdp)
+                    modifier = Modifier.size(AppDimensions.iconMedium)
                 )
             }
-            Spacer(modifier = Modifier.width(12.sdp))
+            Spacer(modifier = Modifier.width(AppDimensions.paddingMediumSmall))
             Column(modifier = Modifier.weight(1f)) {
                 AppText.TitleMedium(
                     text = title,

@@ -6,8 +6,13 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
 import android.media.MediaPlayer
+import android.media.Ringtone
+import android.media.RingtoneManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.ne.muslimprayers.qiblafinder.R
@@ -21,16 +26,28 @@ import dagger.hilt.android.AndroidEntryPoint
 class PrayerAlarmReceiver : BroadcastReceiver() {
 
     companion object {
-        const val CHANNEL_ID = "islamic_prayer_channel"
-        const val CHANNEL_NAME = "Prayer Times & Adhan"
+        const val CHANNEL_ID = "islamic_prayer_alert_channel_v2"
+        const val CHANNEL_NAME = "Prayer Times & Alerts"
         const val EXTRA_ALARM_ID = "extra_alarm_id"
         const val EXTRA_PRAYER_NAME = "extra_prayer_name"
         const val EXTRA_PRAYER_TIME = "extra_prayer_time"
         const val ACTION_STOP_ADHAN = "com.ne.muslimprayers.qiblafinder.ACTION_STOP_ADHAN"
 
+        // Play only a short opening Takbeer snippet (~14 seconds) rather than the full 3.5-minute Adhan
+        private const val SHORT_ADHAN_DURATION_MS = 14_000L
+        private const val SHORT_TONE_DURATION_MS = 4_000L
+
         private var activeMediaPlayer: MediaPlayer? = null
+        private var activeRingtone: Ringtone? = null
+        private val mainHandler = Handler(Looper.getMainLooper())
+        private var autoStopRunnable: Runnable? = null
 
         fun stopActiveAdhan() {
+            try {
+                autoStopRunnable?.let { mainHandler.removeCallbacks(it) }
+                autoStopRunnable = null
+            } catch (_: Exception) {
+            }
             try {
                 activeMediaPlayer?.let { mp ->
                     if (mp.isPlaying) {
@@ -41,6 +58,16 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             } catch (_: Exception) {
             } finally {
                 activeMediaPlayer = null
+            }
+            try {
+                activeRingtone?.let { rt ->
+                    if (rt.isPlaying) {
+                        rt.stop()
+                    }
+                }
+            } catch (_: Exception) {
+            } finally {
+                activeRingtone = null
             }
         }
     }
@@ -69,12 +96,14 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             return
         }
 
-        val modeKey = prefs.getString("notif_mode_$prayerKey", PrayerNotificationMode.ADHAN.key)
+        val modeKey = prefs.getString("notif_mode_$prayerKey", PrayerNotificationMode.TONE.key)
         val mode = PrayerNotificationMode.fromKey(modeKey)
 
         showPrayerNotification(context, alarmId, prayerName, prayerTime, mode)
-        if (mode == PrayerNotificationMode.ADHAN) {
-            playAdhan(context, prayerName)
+        when (mode) {
+            PrayerNotificationMode.ADHAN -> playShortAdhanSnippet(context, prayerName)
+            PrayerNotificationMode.TONE -> playShortAlarmTone(context)
+            PrayerNotificationMode.SILENT -> Unit
         }
 
         // Automatically reschedule for tomorrow at the same prayer time
@@ -111,9 +140,10 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                 CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Notifications for Muslim Prayer Times & Adhan"
+                description = "Notifications for Muslim Prayer Times"
+                setSound(null, null) // Sound is controlled explicitly per mode
                 enableVibration(true)
-                vibrationPattern = longArrayOf(0, 500, 250, 500)
+                vibrationPattern = longArrayOf(0, 400, 200, 400)
             }
             notificationManager.createNotificationChannel(channel)
         }
@@ -143,20 +173,18 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.mipmap.icon)
             .setContentTitle("Time for $prayerName Prayer ($prayerTime)")
-            .setContentText("Hayya 'ala-s-Salah - Come to prayer! It is time for $prayerName.")
+            .setContentText("Hayya 'ala-s-Salah — It is time for $prayerName prayer.")
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setAutoCancel(true)
+            .setSilent(true)
             .setContentIntent(pendingIntent)
             .setColor(ContextCompat.getColor(context, R.color.white))
 
-        if (mode == PrayerNotificationMode.SILENT) {
-            builder.setSilent(true)
-        } else if (mode == PrayerNotificationMode.ADHAN) {
-            builder.setSilent(true) // Adhan audio is played directly via MediaPlayer
+        if (mode != PrayerNotificationMode.SILENT) {
             builder.addAction(
                 android.R.drawable.ic_media_pause,
-                "Stop Adhan",
+                "Dismiss Alert",
                 stopPendingIntent
             )
         }
@@ -164,7 +192,36 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         notificationManager.notify(notificationId, builder.build())
     }
 
-    private fun playAdhan(context: Context, prayerName: String) {
+    /**
+     * Plays a short notification/alarm tone (~4 seconds) instead of the full Adhan.
+     */
+    private fun playShortAlarmTone(context: Context) {
+        try {
+            stopActiveAdhan()
+            val toneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+            val ringtone = RingtoneManager.getRingtone(context.applicationContext, toneUri)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                ringtone?.audioAttributes = AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            }
+            activeRingtone = ringtone
+            ringtone?.play()
+
+            val stopTask = Runnable { stopActiveAdhan() }
+            autoStopRunnable = stopTask
+            mainHandler.postDelayed(stopTask, SHORT_TONE_DURATION_MS)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    /**
+     * Plays only the opening Takbeer snippet (~14 seconds) of the Adhan so it never plays the whole 3-minute audio.
+     */
+    private fun playShortAdhanSnippet(context: Context, prayerName: String) {
         try {
             stopActiveAdhan()
             val audioRes = if (prayerName.equals("Fajr", ignoreCase = true)) {
@@ -172,7 +229,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             } else {
                 R.raw.adzan_makkah
             }
-            val mediaPlayer = MediaPlayer.create(context, audioRes)
+            val mediaPlayer = MediaPlayer.create(context.applicationContext, audioRes)
             activeMediaPlayer = mediaPlayer
             mediaPlayer?.setOnCompletionListener { mp ->
                 mp.release()
@@ -181,6 +238,10 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                 }
             }
             mediaPlayer?.start()
+
+            val stopTask = Runnable { stopActiveAdhan() }
+            autoStopRunnable = stopTask
+            mainHandler.postDelayed(stopTask, SHORT_ADHAN_DURATION_MS)
         } catch (e: Exception) {
             e.printStackTrace()
         }

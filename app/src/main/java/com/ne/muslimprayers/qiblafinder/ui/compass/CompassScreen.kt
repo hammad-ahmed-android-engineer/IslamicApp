@@ -86,7 +86,7 @@ fun CompassScreen(
     }
 
     // Calculate relative angle to Qibla in [-180, 180]: 0° = perfectly aligned with top of phone
-    val relativeAngle = ((state.qiblaBearing - state.compassAzimuth + 540f) % 360f) - 180f
+    val relativeAngle = shortestAngleDelta(state.qiblaBearing, state.compassAzimuth)
     val isFacingQibla = abs(relativeAngle) < 5f && state.isLocationAvailable
 
     // Trigger haptic feedback when aligned with the Kaaba
@@ -96,12 +96,18 @@ fun CompassScreen(
         }
     }
 
-    // Unwrap dial target rotation so crossing 0°/360° smoothly rotates by shortest path
+    // Unwrap dial target rotation (-azimuth) so crossing 0°/360° smoothly rotates by shortest path
     var continuousDialTarget by remember { mutableFloatStateOf(-state.compassAzimuth) }
     LaunchedEffect(state.compassAzimuth) {
         val desired = -state.compassAzimuth
-        val delta = ((desired - continuousDialTarget + 540f) % 360f) - 180f
-        continuousDialTarget += delta
+        continuousDialTarget += shortestAngleDelta(desired, continuousDialTarget)
+    }
+
+    // Unwrap Qibla needle target rotation (qiblaBearing - azimuth) so crossing 0°/360° smoothly rotates by shortest path
+    var continuousNeedleTarget by remember { mutableFloatStateOf(state.qiblaBearing - state.compassAzimuth) }
+    LaunchedEffect(state.compassAzimuth, state.qiblaBearing) {
+        val desired = state.qiblaBearing - state.compassAzimuth
+        continuousNeedleTarget += shortestAngleDelta(desired, continuousNeedleTarget)
     }
 
     val animatedDialRotation by animateFloatAsState(
@@ -111,6 +117,15 @@ fun CompassScreen(
             stiffness = Spring.StiffnessMediumLow
         ),
         label = "dial_rotation"
+    )
+
+    val animatedNeedleRotation by animateFloatAsState(
+        targetValue = continuousNeedleTarget,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "needle_rotation"
     )
 
     val statusBorderColor by animateColorAsState(
@@ -160,8 +175,9 @@ fun CompassScreen(
                         state = state,
                         isFacingQibla = isFacingQibla,
                         animatedDialRotation = animatedDialRotation,
+                        animatedNeedleRotation = animatedNeedleRotation,
                         statusBorderColor = statusBorderColor,
-                        size = 220
+                        size = AppDimensions.dialogContentMaxHeightCompact
                     )
                 }
 
@@ -181,7 +197,8 @@ fun CompassScreen(
                     ReadingsCard(state = state, isFacingQibla = isFacingQibla)
                     CalibrationNotice(
                         sensorAccuracy = state.sensorAccuracy,
-                        isSensorAvailable = state.isSensorAvailable
+                        isSensorAvailable = state.isSensorAvailable,
+                        tiltDegrees = state.tiltDegrees
                     )
                 }
             }
@@ -207,8 +224,9 @@ fun CompassScreen(
                     state = state,
                     isFacingQibla = isFacingQibla,
                     animatedDialRotation = animatedDialRotation,
+                    animatedNeedleRotation = animatedNeedleRotation,
                     statusBorderColor = statusBorderColor,
-                    size = 280
+                    size = AppDimensions.compassDialSize
                 )
 
                 Spacer(modifier = Modifier.height(AppDimensions.paddingLarge))
@@ -219,9 +237,13 @@ fun CompassScreen(
 
                 CalibrationNotice(
                     sensorAccuracy = state.sensorAccuracy,
-                    isSensorAvailable = state.isSensorAvailable
+                    isSensorAvailable = state.isSensorAvailable,
+                    tiltDegrees = state.tiltDegrees
                 )
             }
         }
     }
 }
+
+private fun shortestAngleDelta(target: Float, current: Float): Float =
+    (((target - current) % 360f + 540f) % 360f) - 180f

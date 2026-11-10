@@ -15,6 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.ne.muslimprayers.qiblafinder.R
 import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.domain.model.TasbihState
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
@@ -62,7 +64,7 @@ fun TasbihTabContent(
                     arabicPhrase = tasbih.arabicPhrase,
                     scale = scale,
                     onTap = onTap,
-                    size = 200
+                    size = AppDimensions.compassDialSize
                 )
             }
 
@@ -79,7 +81,7 @@ fun TasbihTabContent(
                 )
 
                 AppText.HeadingMedium(
-                    text = "Select Dhikr Phrase",
+                    text = stringResource(R.string.tasbih_presets),
                     color = MaterialTheme.colorScheme.onBackground
                 )
 
@@ -115,7 +117,7 @@ fun TasbihTabContent(
                 arabicPhrase = tasbih.arabicPhrase,
                 scale = scale,
                 onTap = onTap,
-                size = 250
+                size = AppDimensions.compassDialSize
             )
 
             Column(
@@ -123,7 +125,7 @@ fun TasbihTabContent(
                 verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingSmall)
             ) {
                 AppText.HeadingMedium(
-                    text = "Select Dhikr Phrase",
+                    text = stringResource(R.string.tasbih_presets),
                     color = MaterialTheme.colorScheme.onBackground
                 )
 

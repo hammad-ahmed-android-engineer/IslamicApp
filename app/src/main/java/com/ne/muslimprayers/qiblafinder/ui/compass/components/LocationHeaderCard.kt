@@ -17,7 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.domain.model.QiblaState
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
@@ -44,9 +44,9 @@ fun LocationHeaderCard(
                     imageVector = Icons.Default.LocationOn,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(22.sdp)
+                    modifier = Modifier.size(AppDimensions.iconLarge)
                 )
-                Spacer(modifier = Modifier.width(10.sdp))
+                Spacer(modifier = Modifier.width(AppDimensions.paddingRegular))
                 Column(modifier = Modifier.weight(1f)) {
                     AppText.TitleMedium(
                         text = if (state.cityName.isNotBlank()) state.cityName else "Calculating location...",

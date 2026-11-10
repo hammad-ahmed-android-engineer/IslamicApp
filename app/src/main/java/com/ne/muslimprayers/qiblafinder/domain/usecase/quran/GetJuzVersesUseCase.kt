@@ -2,6 +2,7 @@ package com.ne.muslimprayers.qiblafinder.domain.usecase.quran
 
 import com.ne.muslimprayers.qiblafinder.core.common.Resource
 import com.ne.muslimprayers.qiblafinder.domain.model.Ayah
+import com.ne.muslimprayers.qiblafinder.domain.model.JuzStartBoundary
 import com.ne.muslimprayers.qiblafinder.domain.repository.QuranRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
@@ -15,5 +16,8 @@ class GetJuzVersesUseCase @Inject constructor(
     operator fun invoke(juzNumber: Int): Flow<Resource<List<Ayah>>> {
         return quranRepository.getJuzVerses(juzNumber)
     }
+
+    suspend fun getJuzStartBoundaries(): Map<Int, JuzStartBoundary> =
+        quranRepository.getJuzStartBoundaries()
 }
 

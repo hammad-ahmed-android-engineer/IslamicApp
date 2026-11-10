@@ -42,8 +42,12 @@ data class JuzInfo(
     val arabicName: String,
     val englishName: String,
     val startingSurahNumber: Int,
-    val startingSurahName: String
-)
+    val startingSurahName: String,
+    val totalVerses: Int = 148,
+    val startingAyahNumber: Int? = null
+) {
+    val startsNewSurah: Boolean? get() = startingAyahNumber?.let { it == 1 }
+}
 
 val DEFAULT_FAVORITE_SURAHS = listOf(
     18, // Surah Al-Kahf
@@ -136,9 +140,37 @@ class QuranViewModel @Inject constructor(
 
     init {
         loadSurahs()
+        loadJuzStartBoundaries()
         observeDownloadStatus()
         observeFontChanges()
         refreshDownloadedSets()
+    }
+
+    private fun loadJuzStartBoundaries() {
+        viewModelScope.launch {
+            val boundaries = getJuzVersesUseCase.getJuzStartBoundaries()
+            if (boundaries.isEmpty()) return@launch
+            _uiState.update { state ->
+                val updatedJuzList = state.juzList.map { juz ->
+                    val boundary = boundaries[juz.number] ?: return@map juz
+                    val startingSurahName = state.surahs.find { it.number == boundary.startingSurahNumber }?.name
+                        ?: juz.startingSurahName
+                    juz.copy(
+                        startingSurahNumber = boundary.startingSurahNumber,
+                        startingSurahName = startingSurahName,
+                        totalVerses = if (boundary.totalVerses > 0) boundary.totalVerses else juz.totalVerses,
+                        startingAyahNumber = boundary.startingAyahNumber
+                    )
+                }
+                val updatedSelectedJuz = state.selectedJuz?.let { current ->
+                    updatedJuzList.find { it.number == current.number } ?: current
+                }
+                state.copy(
+                    juzList = updatedJuzList,
+                    selectedJuz = updatedSelectedJuz
+                )
+            }
+        }
     }
 
     private fun observeFontChanges() {
@@ -410,17 +442,53 @@ class QuranViewModel @Inject constructor(
     }
 
     /**
+     * Resolves the detail header metadata for a Juz based on whether its first Ayah
+     * starts a new Surah (Ayah 1 -> display the Surah name) or continues a Surah from the
+     * previous Juz (Ayah > 1 -> display the Juz name).
+     */
+    private fun resolveJuzTitleSurah(
+        juz: JuzInfo,
+        surahs: List<Surah>,
+        firstAyah: Ayah?,
+        verseCount: Int
+    ): Surah {
+        val startingSurahNum = firstAyah?.surahNumber?.takeIf { it > 0 } ?: juz.startingSurahNumber
+        val startingSurah = surahs.find { it.number == startingSurahNum }
+            ?: QuranStaticData.ALL_SURAHS.find { it.number == startingSurahNum }
+        val resolvedSurahName = startingSurah?.name ?: juz.startingSurahName
+        val startsNewSurah = (firstAyah?.numberInSurah ?: juz.startingAyahNumber) == 1
+
+        return if (startsNewSurah) {
+            Surah(
+                number = startingSurahNum,
+                name = resolvedSurahName,
+                arabicName = startingSurah?.arabicName ?: juz.arabicName,
+                englishMeaning = "Juz ${juz.number} (${juz.englishName})",
+                totalVerses = verseCount,
+                revelationType = startingSurah?.revelationType ?: "Juz ${juz.number}"
+            )
+        } else {
+            Surah(
+                number = startingSurahNum,
+                name = "Juz ${juz.number} (${juz.englishName})",
+                arabicName = juz.arabicName,
+                englishMeaning = "Continues Surah $resolvedSurahName",
+                totalVerses = verseCount,
+                revelationType = "Juz ${juz.number}"
+            )
+        }
+    }
+
+    /**
      * Opens the entire Juz for reading offline.
      */
     fun selectJuz(juz: JuzInfo) {
-        val startingSurah = _uiState.value.surahs.find { it.number == juz.startingSurahNumber }
-        val juzTitleSurah = Surah(
-            number = juz.startingSurahNumber,
-            name = "Juz ${juz.number} (${juz.englishName})",
-            arabicName = juz.arabicName,
-            englishMeaning = "Starts at Surah ${startingSurah?.name ?: juz.startingSurahName}",
-            totalVerses = 0,
-            revelationType = "Juz ${juz.number}"
+        val surahs = _uiState.value.surahs
+        val juzTitleSurah = resolveJuzTitleSurah(
+            juz = juz,
+            surahs = surahs,
+            firstAyah = null,
+            verseCount = 0
         )
         val isDownloaded = QuranAudioDownloadManager.isJuzDownloaded(
             context,
@@ -449,16 +517,38 @@ class QuranViewModel @Inject constructor(
                     }
                     is Resource.Success -> {
                         val list = result.data.orEmpty()
+                        val firstAyah = list.firstOrNull()
                         val isDownloaded = QuranAudioDownloadManager.isJuzDownloaded(
                             context,
                             _uiState.value.selectedReciter,
                             juzNumber
                         )
                         _uiState.update { state ->
-                            val updatedSurah = state.selectedSurah?.copy(totalVerses = list.size)
+                            val activeJuz = state.selectedJuz?.takeIf { it.number == juzNumber }
+                            val updatedJuz = if (activeJuz != null && firstAyah != null) {
+                                activeJuz.copy(
+                                    startingSurahNumber = firstAyah.surahNumber.takeIf { it > 0 }
+                                        ?: activeJuz.startingSurahNumber,
+                                    startingSurahName = state.surahs.find { it.number == firstAyah.surahNumber }?.name
+                                        ?: activeJuz.startingSurahName,
+                                    startingAyahNumber = firstAyah.numberInSurah
+                                )
+                            } else {
+                                activeJuz
+                            }
+                            val updatedSurah = updatedJuz?.let {
+                                resolveJuzTitleSurah(
+                                    juz = it,
+                                    surahs = state.surahs,
+                                    firstAyah = firstAyah,
+                                    verseCount = list.size
+                                )
+                            } ?: state.selectedSurah?.copy(totalVerses = list.size)
+
                             state.copy(
                                 isLoadingVerses = false,
                                 verses = list,
+                                selectedJuz = updatedJuz ?: state.selectedJuz,
                                 selectedSurah = updatedSurah,
                                 versesError = null,
                                 isCurrentSurahDownloaded = isDownloaded
@@ -879,35 +969,35 @@ class QuranViewModel @Inject constructor(
     }
 
     private fun createJuzList(): List<JuzInfo> = listOf(
-        JuzInfo(1, "الم (آلم)", "Alif Lam Meem", 1, "Al-Faatiha"),
-        JuzInfo(2, "سَيَقُولُ", "Sayaqool", 2, "Al-Baqara"),
-        JuzInfo(3, "تِلْكَ الرُّسُلُ", "Tilkar Rusul", 2, "Al-Baqara"),
-        JuzInfo(4, "لَنْ تَنَالُوا", "Lan Tanaalu", 3, "Aal-i-Imraan"),
-        JuzInfo(5, "وَالْمُحْصَنَاتُ", "Wal Muhsanat", 4, "An-Nisaa"),
-        JuzInfo(6, "لَا يُحِبُّ اللَّهُ", "La Yuhibbullah", 4, "An-Nisaa"),
-        JuzInfo(7, "وَإِذَا سَمِعُوا", "Wa Iza Sami'u", 5, "Al-Maaida"),
-        JuzInfo(8, "وَلَوْ أَنَّنَا", "Wa Law Annana", 6, "Al-An'aam"),
-        JuzInfo(9, "قَالَ الْمَلَأُ", "Qalal Mala'u", 7, "Al-A'raaf"),
-        JuzInfo(10, "وَاعْلَمُوا", "Wa'lamoo", 8, "Al-Anfaal"),
-        JuzInfo(11, "يَعْتَذِرُونَ", "Ya'taziroon", 9, "At-Tawba"),
-        JuzInfo(12, "وَمَا مِنْ دَابَّةٍ", "Wa Ma Min Dabbah", 11, "Hud"),
-        JuzInfo(13, "وَمَا أُبَرِّئُ", "Wa Ma Ubarri'u", 12, "Yusuf"),
-        JuzInfo(14, "رُبَمَا", "Rubama", 15, "Al-Hijr"),
-        JuzInfo(15, "سُبْحَانَ الَّذِي", "Subhanallazi", 17, "Al-Israa"),
-        JuzInfo(16, "قَالَ أَلَمْ", "Qal Alam", 18, "Al-Kahf"),
-        JuzInfo(17, "اقْتَرَبَ لِلنَّاسِ", "Iqtaraba Linnaas", 21, "Al-Anbiyaa"),
-        JuzInfo(18, "قَدْ أَفْلَحَ", "Qad Aflaha", 23, "Al-Muminoon"),
-        JuzInfo(19, "وَقَالَ الَّذِينَ", "Wa Qalal Lazeena", 25, "Al-Furqaan"),
-        JuzInfo(20, "أَمَّنْ خَلَقَ", "Amman Khalaq", 27, "An-Naml"),
-        JuzInfo(21, "اتْلُ مَا أُوحِيَ", "Utlu Ma Oohiya", 29, "Al-Ankaboot"),
-        JuzInfo(22, "وَمَنْ يَقْنُتْ", "Wa Man Yaqnut", 33, "Al-Ahzaab"),
-        JuzInfo(23, "وَمَا لِيَ", "Wa Maliya", 36, "Yaseen"),
-        JuzInfo(24, "فَمَنْ أَظْلَمُ", "Faman Azlamu", 39, "Az-Zumar"),
-        JuzInfo(25, "إِلَيْهِ يُرَدُّ", "Ilayhi Yuraddu", 41, "Fussilat"),
-        JuzInfo(26, "حم", "Ha-Meem", 46, "Al-Ahqaf"),
-        JuzInfo(27, "قَالَ فَمَا خَطْبُكُمْ", "Qala Fama Khatbukum", 51, "Az-Zariyat"),
-        JuzInfo(28, "قَدْ سَمِعَ اللَّهُ", "Qad Sami'allah", 58, "Al-Mujadila"),
-        JuzInfo(29, "تَبَارَكَ الَّذِي", "Tabarakallazi", 67, "Al-Mulk"),
-        JuzInfo(30, "عَمَّ يَتَسَاءَلُونَ", "'Amma Yatasa'aloon", 78, "An-Naba")
+        JuzInfo(1, "آلم", "Alif Laam Meem", 1, "Al-Faatiha", 148),
+        JuzInfo(2, "سَيَقُولُ", "Sayaqool", 2, "Al-Baqara", 111),
+        JuzInfo(3, "تِلْكَ الرُّسُلُ", "Tilkar Rusul", 2, "Al-Baqara", 126),
+        JuzInfo(4, "لَنْ تَنَالُوا", "Lan Tanaalu", 3, "Aal-i-Imraan", 131),
+        JuzInfo(5, "وَالْمُحْصَنَاتُ", "Wal Muhsanat", 4, "An-Nisaa", 124),
+        JuzInfo(6, "لَا يُحِبُّ اللَّهُ", "La Yuhibbullah", 4, "An-Nisaa", 110),
+        JuzInfo(7, "وَإِذَا سَمِعُوا", "Wa Iza Sami'u", 5, "Al-Maaida", 149),
+        JuzInfo(8, "وَلَوْ أَنَّنَا", "Wa Law Annana", 6, "Al-An'aam", 142),
+        JuzInfo(9, "قَالَ الْمَلَأُ", "Qalal Mala'u", 7, "Al-A'raaf", 159),
+        JuzInfo(10, "وَاعْلَمُوا", "Wa'lamoo", 8, "Al-Anfaal", 127),
+        JuzInfo(11, "يَعْتَذِرُونَ", "Ya'taziroon", 9, "At-Tawba", 151),
+        JuzInfo(12, "وَمَا مِنْ دَابَّةٍ", "Wa Ma Min Dabbah", 11, "Hud", 170),
+        JuzInfo(13, "وَمَا أُبَرِّئُ", "Wa Ma Ubarri'u", 12, "Yusuf", 154),
+        JuzInfo(14, "رُبَمَا", "Rubama", 15, "Al-Hijr", 227),
+        JuzInfo(15, "سُبْحَانَ الَّذِي", "Subhanallazi", 17, "Al-Israa", 185),
+        JuzInfo(16, "قَالَ أَلَمْ", "Qal Alam", 18, "Al-Kahf", 269),
+        JuzInfo(17, "اقْتَرَبَ لِلنَّاسِ", "Iqtaraba Linnaas", 21, "Al-Anbiyaa", 190),
+        JuzInfo(18, "قَدْ أَفْلَحَ", "Qad Aflaha", 23, "Al-Muminoon", 202),
+        JuzInfo(19, "وَقَالَ الَّذِينَ", "Wa Qalal Lazeena", 25, "Al-Furqaan", 339),
+        JuzInfo(20, "أَمَّنْ خَلَقَ", "Amman Khalaq", 27, "An-Naml", 171),
+        JuzInfo(21, "اتْلُ مَا أُوحِيَ", "Utlu Ma Oohiya", 29, "Al-Ankaboot", 178),
+        JuzInfo(22, "وَمَنْ يَقْنُتْ", "Wa Man Yaqnut", 33, "Al-Ahzaab", 169),
+        JuzInfo(23, "وَمَا لِيَ", "Wa Maliya", 36, "Yaseen", 357),
+        JuzInfo(24, "فَمَنْ أَظْلَمُ", "Faman Azlamu", 39, "Az-Zumar", 175),
+        JuzInfo(25, "إِلَيْهِ يُرَدُّ", "Ilayhi Yuraddu", 41, "Fussilat", 246),
+        JuzInfo(26, "حم", "Ha-Meem", 46, "Al-Ahqaf", 195),
+        JuzInfo(27, "قَالَ فَمَا خطْبُكُمْ", "Qala Fama Khatbukum", 51, "Az-Zariyat", 399),
+        JuzInfo(28, "قَدْ سَمِعَ اللَّهُ", "Qad Sami'allah", 58, "Al-Mujadila", 137),
+        JuzInfo(29, "تَبَارَكَ الَّذِي", "Tabarakallazi", 67, "Al-Mulk", 431),
+        JuzInfo(30, "عَمَّ يَتَسَاءَلُونَ", "'Amma Yatasa'aloon", 78, "An-Naba", 564)
     )
 }

@@ -18,13 +18,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,26 +34,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.ne.muslimprayers.qiblafinder.R
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
-import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchreLight
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSageLight
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
 import com.ne.muslimprayers.qiblafinder.core.theme.WarmParchment
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
-import com.ne.muslimprayers.qiblafinder.core.theme.ssp
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 import kotlinx.coroutines.delay
 
@@ -112,10 +106,10 @@ fun SplashScreen(
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 32.sdp, vertical = 16.sdp)
+                    .padding(horizontal = AppDimensions.paddingExtraLarge, vertical = AppDimensions.paddingMedium)
                     .alpha(contentAlpha),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(32.sdp)
+                horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingExtraLarge)
             ) {
                 Column(
                     modifier = Modifier.weight(1f),
@@ -125,7 +119,7 @@ fun SplashScreen(
                     // Outer soft halo
                     Box(
                         modifier = Modifier
-                            .size(114.sdp)
+                            .size(AppDimensions.splashHaloSizeCompact)
                             .scale(scale)
                             .clip(CircleShape)
                             .background(
@@ -137,26 +131,27 @@ fun SplashScreen(
                                     )
                                 )
                             )
-                            .border(2.sdp, DesertOchre, CircleShape),
+                            .border(AppDimensions.borderWidthThick, DesertOchre, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
                             painter = painterResource(id = R.mipmap.icon),
                             contentDescription = "App Emblem",
                             modifier = Modifier
-                                .size(92.sdp)
+                                .size(AppDimensions.splashEmblemSizeCompact)
                                 .clip(CircleShape)
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(14.sdp))
+                    Spacer(modifier = Modifier.height(AppDimensions.paddingMediumSmall))
 
-                    Text(
+                    AppText.ArabicText(
                         text = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
-                        fontSize = 18.ssp,
+                        fontSize = AppDimensions.textHeadingMedium,
                         fontWeight = FontWeight.Bold,
                         color = DesertOchre,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        applySafePadding = false
                     )
                 }
 
@@ -174,7 +169,7 @@ fun SplashScreen(
                         textAlign = TextAlign.Center
                     )
 
-                    Spacer(modifier = Modifier.height(8.sdp))
+                    Spacer(modifier = Modifier.height(AppDimensions.paddingSmall))
 
                     AppText.BodyMedium(
                         text = "Your daily spiritual sanctuary for prayer timings, noble Quran, and accurate Qibla directions.",
@@ -182,12 +177,12 @@ fun SplashScreen(
                         textAlign = TextAlign.Center
                     )
 
-                    Spacer(modifier = Modifier.height(24.sdp))
+                    Spacer(modifier = Modifier.height(AppDimensions.paddingLarge))
 
                     CircularProgressIndicator(
                         color = MedinaSage,
-                        strokeWidth = 2.5.sdp,
-                        modifier = Modifier.size(28.sdp)
+                        strokeWidth = AppDimensions.borderWidthThick,
+                        modifier = Modifier.size(AppDimensions.loaderSize)
                     )
                 }
             }
@@ -198,13 +193,13 @@ fun SplashScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(24.sdp)
+                    .padding(AppDimensions.paddingLarge)
                     .alpha(contentAlpha)
             ) {
                 // Luxury emblem container with halo
                 Box(
                     modifier = Modifier
-                        .size(136.sdp)
+                        .size(AppDimensions.splashHaloSize)
                         .scale(scale)
                         .clip(CircleShape)
                         .background(
@@ -216,32 +211,32 @@ fun SplashScreen(
                                 )
                             )
                         )
-                        .border(2.5.sdp, DesertOchre, CircleShape),
+                        .border(AppDimensions.borderWidthThick, DesertOchre, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
                         painter = painterResource(id = R.mipmap.icon),
                         contentDescription = "App Emblem",
                         modifier = Modifier
-                            .size(110.sdp)
+                            .size(AppDimensions.splashEmblemSize)
                             .clip(CircleShape)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(26.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingLarge))
 
-                // Bismillah Calligraphy
-                Text(
+                // Bismillah Calligraphy via AppText custom view
+                AppText.ArabicText(
                     text = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
-                    fontSize = 22.ssp,
+                    fontSize = AppDimensions.textBismillahBanner,
                     fontWeight = FontWeight.Bold,
                     color = DesertOchre,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    applySafePadding = false
                 )
 
-                Spacer(modifier = Modifier.height(12.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingMediumSmall))
 
                 AppText.DisplayLarge(
                     text = "Muslim Prayers & Qibla",
@@ -251,13 +246,13 @@ fun SplashScreen(
                     maxLines = 2
                 )
 
-                Spacer(modifier = Modifier.height(6.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingExtraSmall))
 
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(12.sdp))
+                        .clip(RoundedCornerShape(AppDimensions.cornerMedium))
                         .background(MedinaSageLight)
-                        .padding(horizontal = 12.sdp, vertical = 4.sdp)
+                        .padding(horizontal = AppDimensions.paddingMediumSmall, vertical = AppDimensions.paddingTiny)
                 ) {
                     AppText.Caption(
                         text = "Your Spiritual Daily Companion",
@@ -266,21 +261,21 @@ fun SplashScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(12.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingMediumSmall))
 
                 AppText.BodyMedium(
                     text = "Accurate Qibla directions, prayer notifications, Holy Quran and spiritual remembrance.",
                     color = TextSecondary,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 14.sdp)
+                    modifier = Modifier.padding(horizontal = AppDimensions.paddingMedium)
                 )
 
-                Spacer(modifier = Modifier.height(36.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingExtraLarge))
 
                 CircularProgressIndicator(
                     color = MedinaSage,
-                    strokeWidth = 2.5.sdp,
-                    modifier = Modifier.size(28.sdp)
+                    strokeWidth = AppDimensions.borderWidthThick,
+                    modifier = Modifier.size(AppDimensions.loaderSize)
                 )
             }
         }

@@ -1,19 +1,16 @@
 package com.ne.muslimprayers.qiblafinder.ui.home.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import com.ne.muslimprayers.qiblafinder.core.utils.clickableDebounced
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material.icons.filled.NotificationsActive
@@ -21,12 +18,12 @@ import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.WbTwilight
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchreLight
 import com.ne.muslimprayers.qiblafinder.core.theme.DividerColor
@@ -35,10 +32,11 @@ import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSageLight
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
+import com.ne.muslimprayers.qiblafinder.core.utils.clickableDebounced
 import com.ne.muslimprayers.qiblafinder.domain.model.PrayerType
 import com.ne.muslimprayers.qiblafinder.domain.model.SinglePrayer
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
+import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
 
 @Composable
 fun PrayerTimingChip(
@@ -66,34 +64,31 @@ fun PrayerTimingChip(
         PrayerType.ISHA -> "العشاء"
     }
 
-    Surface(
+    IslamicCard(
         modifier = modifier
-            .width(116.sdp)
-            .clip(RoundedCornerShape(18.sdp))
-            .clickableDebounced { onClick() }
-            .border(
-                width = if (prayer.isNext) 1.5.sdp else 1.sdp,
-                color = if (prayer.isNext) MedinaSage else DividerColor,
-                shape = RoundedCornerShape(18.sdp)
-            ),
-        shape = RoundedCornerShape(18.sdp),
-        color = if (prayer.isNext) MedinaSage else PureAlabaster,
-        tonalElevation = if (prayer.isNext) 5.sdp else 1.sdp
+            .width(AppDimensions.prayerChipWidth)
+            .clickableDebounced { onClick() },
+        backgroundColor = if (prayer.isNext) MedinaSage else PureAlabaster,
+        borderColor = if (prayer.isNext) MedinaSage else DividerColor,
+        borderWidth = if (prayer.isNext) AppDimensions.borderWidthMedium else AppDimensions.borderWidthThin,
+        cornerRadius = AppDimensions.cornerExtraLarge,
+        elevation = if (prayer.isNext) AppDimensions.elevationMedium else AppDimensions.elevationSubtle,
+        contentPadding = AppDimensions.paddingRegular
     ) {
         Column(
-            modifier = Modifier.padding(vertical = 10.sdp, horizontal = 10.sdp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             // Top Row: Prayer Icon + Alarm Enable/Disable Toggle
             Row(
-                modifier = Modifier.width(96.sdp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
                     modifier = Modifier
-                        .size(32.sdp)
+                        .size(AppDimensions.paddingExtraLarge)
                         .clip(CircleShape)
                         .background(if (prayer.isNext) DesertOchre.copy(alpha = 0.25f) else MedinaSageLight),
                     contentAlignment = Alignment.Center
@@ -102,14 +97,14 @@ fun PrayerTimingChip(
                         imageVector = icon,
                         contentDescription = null,
                         tint = if (prayer.isNext) DesertOchre else MedinaSage,
-                        modifier = Modifier.size(18.sdp)
+                        modifier = Modifier.size(AppDimensions.iconRegular)
                     )
                 }
 
                 if (prayer.type != PrayerType.SUNRISE && onToggleAlarm != null) {
                     Box(
                         modifier = Modifier
-                            .size(28.sdp)
+                            .size(AppDimensions.actionCircleSize)
                             .clip(CircleShape)
                             .background(
                                 when {
@@ -131,13 +126,13 @@ fun PrayerTimingChip(
                                 isAlarmActive -> MedinaSage
                                 else -> TextSecondary
                             },
-                            modifier = Modifier.size(15.sdp)
+                            modifier = Modifier.size(AppDimensions.iconSmall)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.sdp))
+            Spacer(modifier = Modifier.height(AppDimensions.paddingExtraSmall))
 
             // Prayer Name & Arabic
             Row(
@@ -150,7 +145,7 @@ fun PrayerTimingChip(
                     color = if (prayer.isNext) PureAlabaster else TextPrimary,
                     maxLines = 1
                 )
-                Spacer(modifier = Modifier.width(3.sdp))
+                Spacer(modifier = Modifier.width(AppDimensions.accentBarWidth))
                 AppText.Caption(
                     text = arabicName,
                     color = if (prayer.isNext) DesertOchre else TextSecondary,
@@ -158,7 +153,7 @@ fun PrayerTimingChip(
                 )
             }
 
-            Spacer(modifier = Modifier.height(3.sdp))
+            Spacer(modifier = Modifier.height(AppDimensions.paddingTiny))
 
             // Time Formatted
             AppText.TitleMedium(

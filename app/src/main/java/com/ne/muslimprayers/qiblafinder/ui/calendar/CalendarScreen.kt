@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -22,12 +21,13 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.WarmParchment
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.ui.calendar.components.CalendarDayChip
 import com.ne.muslimprayers.qiblafinder.ui.calendar.components.CalendarPrayerTimingRow
 import com.ne.muslimprayers.qiblafinder.ui.calendar.components.CalendarSelectedDayCard
 import com.ne.muslimprayers.qiblafinder.ui.calendar.components.MonthSelectorBar
+import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 import com.ne.muslimprayers.qiblafinder.ui.components.ErrorState
 import com.ne.muslimprayers.qiblafinder.ui.components.IslamicTopAppBar
 import com.ne.muslimprayers.qiblafinder.ui.components.LoadingState
@@ -70,13 +70,13 @@ fun CalendarScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
-                        .padding(horizontal = 16.sdp),
-                    horizontalArrangement = Arrangement.spacedBy(16.sdp)
+                        .padding(horizontal = AppDimensions.paddingMedium),
+                    horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingMedium)
                 ) {
                     LazyColumn(
                         modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(top = 4.sdp, bottom = 24.sdp),
-                        verticalArrangement = Arrangement.spacedBy(12.sdp)
+                        contentPadding = PaddingValues(top = AppDimensions.paddingTiny, bottom = AppDimensions.paddingLarge),
+                        verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingMediumSmall)
                     ) {
                         item {
                             MonthSelectorBar(
@@ -98,7 +98,7 @@ fun CalendarScreen(
 
                         item {
                             LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.sdp),
+                                horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingSmall),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 items(state.calendarDays) { dayInfo ->
@@ -114,8 +114,8 @@ fun CalendarScreen(
 
                     LazyColumn(
                         modifier = Modifier.weight(1.2f),
-                        contentPadding = PaddingValues(top = 4.sdp, bottom = 24.sdp),
-                        verticalArrangement = Arrangement.spacedBy(12.sdp)
+                        contentPadding = PaddingValues(top = AppDimensions.paddingTiny, bottom = AppDimensions.paddingLarge),
+                        verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingMediumSmall)
                     ) {
                         selected?.let { day ->
                             item {
@@ -123,9 +123,8 @@ fun CalendarScreen(
                             }
 
                             item {
-                                Text(
+                                AppText.TitleMedium(
                                     text = "Prayer Timings for Selected Date",
-                                    style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onBackground
                                 )
@@ -143,9 +142,9 @@ fun CalendarScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
-                        .padding(horizontal = 16.sdp),
-                    contentPadding = PaddingValues(top = 4.sdp, bottom = 24.sdp),
-                    verticalArrangement = Arrangement.spacedBy(14.sdp)
+                        .padding(horizontal = AppDimensions.paddingMedium),
+                    contentPadding = PaddingValues(top = AppDimensions.paddingTiny, bottom = AppDimensions.paddingLarge),
+                    verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingMediumSmall)
                 ) {
                     item {
                         MonthSelectorBar(
@@ -167,7 +166,7 @@ fun CalendarScreen(
 
                     item {
                         LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.sdp),
+                            horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingSmall),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             items(state.calendarDays) { dayInfo ->
@@ -186,9 +185,8 @@ fun CalendarScreen(
                         }
 
                         item {
-                            Text(
+                            AppText.TitleMedium(
                                 text = "Prayer Timings for Selected Date",
-                                style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onBackground
                             )

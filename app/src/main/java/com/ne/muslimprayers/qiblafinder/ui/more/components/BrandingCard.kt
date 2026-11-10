@@ -16,10 +16,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import com.ne.muslimprayers.qiblafinder.R
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
 
@@ -36,10 +36,10 @@ fun BrandingCard() {
                 painter = painterResource(id = R.mipmap.icon),
                 contentDescription = "Logo",
                 modifier = Modifier
-                    .size(52.sdp)
+                    .size(AppDimensions.logoAvatarSize)
                     .clip(CircleShape)
             )
-            Spacer(modifier = Modifier.width(14.sdp))
+            Spacer(modifier = Modifier.width(AppDimensions.paddingMediumSmall))
             Column {
                 AppText.TitleMedium(
                     text = "Islamic App - Qibla & Prayers",
@@ -47,7 +47,7 @@ fun BrandingCard() {
                     color = TextPrimary,
                     maxLines = 1
                 )
-                Spacer(modifier = Modifier.height(2.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingMicro))
                 AppText.BodySmall(
                     text = "Version 1.0.0 - Clean & Madina Experience",
                     color = TextSecondary

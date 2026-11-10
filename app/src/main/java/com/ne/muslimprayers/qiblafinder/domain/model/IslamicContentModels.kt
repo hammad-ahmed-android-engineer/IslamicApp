@@ -22,6 +22,20 @@ data class Ayah(
     val surahNumber: Int = 1
 )
 
+/**
+ * Dynamic structural boundary of a Juz derived directly from the Quran's first Ayah in that Juz.
+ * [startsNewSurah] is true only when the Juz starts at Ayah 1 of a Surah (otherwise it continues
+ * an ongoing Surah from the previous Juz).
+ */
+data class JuzStartBoundary(
+    val juzNumber: Int,
+    val startingSurahNumber: Int,
+    val startingAyahNumber: Int,
+    val totalVerses: Int
+) {
+    val startsNewSurah: Boolean get() = startingAyahNumber == 1
+}
+
 data class Hadith(
     val id: Int,
     val chapter: String,

@@ -31,7 +31,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -46,9 +45,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 import com.ne.muslimprayers.qiblafinder.core.theme.DividerColor
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
@@ -56,12 +55,11 @@ import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSageLight
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
-import com.ne.muslimprayers.qiblafinder.core.theme.UrduTranslationFontFamily
 import com.ne.muslimprayers.qiblafinder.core.theme.WarmParchment
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.data.remote.api.QuranApiService
 import com.ne.muslimprayers.qiblafinder.domain.model.Ayah
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
+import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -140,16 +138,20 @@ fun AyahTafseerDialog(
         Surface(
             modifier = Modifier
                 .fillMaxWidth(if (isLandscape) 0.82f else 0.94f)
-                .clip(RoundedCornerShape(24.sdp))
-                .border(1.sdp, DividerColor, RoundedCornerShape(24.sdp)),
+                .clip(RoundedCornerShape(AppDimensions.cornerDialog))
+                .border(
+                    AppDimensions.borderWidthThin,
+                    DividerColor,
+                    RoundedCornerShape(AppDimensions.cornerDialog)
+                ),
             color = WarmParchment,
-            shape = RoundedCornerShape(24.sdp),
-            tonalElevation = 6.sdp
+            shape = RoundedCornerShape(AppDimensions.cornerDialog),
+            tonalElevation = AppDimensions.elevationHigh
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(if (isLandscape) 12.sdp else 18.sdp)
+                    .padding(if (isLandscape) AppDimensions.paddingMediumSmall else AppDimensions.paddingMedium)
             ) {
                 // Header Row
                 Row(
@@ -159,11 +161,11 @@ fun AyahTafseerDialog(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.sdp)
+                        horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingRegular)
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(36.sdp)
+                                .size(AppDimensions.buttonSmallHeight)
                                 .clip(CircleShape)
                                 .background(MedinaSageLight),
                             contentAlignment = Alignment.Center
@@ -172,31 +174,32 @@ fun AyahTafseerDialog(
                                 imageVector = Icons.AutoMirrored.Filled.MenuBook,
                                 contentDescription = null,
                                 tint = MedinaSage,
-                                modifier = Modifier.size(20.sdp)
+                                modifier = Modifier.size(AppDimensions.iconMedium)
                             )
                         }
 
                         Column {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.sdp)
+                                horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingExtraSmall)
                             ) {
                                 AppText.TitleMedium(
                                     text = "Ayah Tafseer",
                                     fontWeight = FontWeight.Bold,
                                     color = TextPrimary
                                 )
-                                // Angular Bracket Verse Tag ‹ Surah.Ayah ›
                                 Surface(
                                     color = MedinaSageLight,
-                                    shape = RoundedCornerShape(6.sdp)
+                                    shape = RoundedCornerShape(AppDimensions.cornerExtraSmall)
                                 ) {
-                                    Text(
+                                    AppText.Caption(
                                         text = "‹ $surahNumber.${ayah.numberInSurah} ›",
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 12.sp,
                                         color = MedinaSage,
-                                        modifier = Modifier.padding(horizontal = 6.sdp, vertical = 2.sdp)
+                                        modifier = Modifier.padding(
+                                            horizontal = AppDimensions.paddingExtraSmall,
+                                            vertical = AppDimensions.paddingMicro
+                                        )
                                     )
                                 }
                             }
@@ -209,34 +212,32 @@ fun AyahTafseerDialog(
 
                     IconButton(
                         onClick = onDismiss,
-                        modifier = Modifier.size(32.sdp)
+                        modifier = Modifier.size(AppDimensions.iconButtonCompact)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close",
                             tint = TextSecondary,
-                            modifier = Modifier.size(20.sdp)
+                            modifier = Modifier.size(AppDimensions.iconMedium)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingRegular))
 
-                // Tafseer Selector Chips (Horizontally scrollable to avoid squishing)
-                Text(
+                AppText.Caption(
                     text = "Commentary & Scholar:",
-                    fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = TextSecondary
                 )
 
-                Spacer(modifier = Modifier.height(6.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingExtraSmall))
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.sdp)
+                    horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingSmall)
                 ) {
                     AVAILABLE_TAFSEERS.forEach { option ->
                         val isSelected = option.id == selectedTafseerId
@@ -250,9 +251,8 @@ fun AyahTafseerDialog(
                                 labelColor = TextPrimary
                             ),
                             label = {
-                                Text(
+                                AppText.Caption(
                                     text = "${option.name} (${option.languageLabel})",
-                                    fontSize = 11.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                     maxLines = 1
                                 )
@@ -261,28 +261,34 @@ fun AyahTafseerDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingSmall))
 
-                // Tafseer Body Container
-                Surface(
+                IslamicCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 160.sdp, max = if (isLandscape) 180.sdp else 320.sdp)
-                        .clip(RoundedCornerShape(16.sdp))
-                        .border(0.8.sdp, DividerColor, RoundedCornerShape(16.sdp)),
-                    color = PureAlabaster
+                        .heightIn(
+                            min = AppDimensions.dialogMinHeight,
+                            max = if (isLandscape) AppDimensions.dialogContentMaxHeightCompact else AppDimensions.dialogContentMaxHeightExpanded
+                        ),
+                    backgroundColor = PureAlabaster,
+                    borderColor = DividerColor,
+                    borderWidth = AppDimensions.borderWidthHairline,
+                    cornerRadius = AppDimensions.cornerLarge,
+                    contentPadding = AppDimensions.paddingZero
                 ) {
                     if (isLoading) {
                         Box(
-                            modifier = Modifier.fillMaxWidth().padding(24.sdp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(AppDimensions.paddingLarge),
                             contentAlignment = Alignment.Center
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 CircularProgressIndicator(
                                     color = MedinaSage,
-                                    modifier = Modifier.size(32.sdp)
+                                    modifier = Modifier.size(AppDimensions.paddingExtraLarge)
                                 )
-                                Spacer(modifier = Modifier.height(8.sdp))
+                                Spacer(modifier = Modifier.height(AppDimensions.paddingSmall))
                                 AppText.Caption(
                                     text = "Loading ${selectedOption.name}...",
                                     color = TextSecondary
@@ -291,7 +297,9 @@ fun AyahTafseerDialog(
                         }
                     } else if (errorMessage != null) {
                         Box(
-                            modifier = Modifier.fillMaxWidth().padding(16.sdp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(AppDimensions.paddingMedium),
                             contentAlignment = Alignment.Center
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -300,12 +308,12 @@ fun AyahTafseerDialog(
                                     color = MaterialTheme.colorScheme.error,
                                     fontWeight = FontWeight.Bold
                                 )
-                                Spacer(modifier = Modifier.height(6.sdp))
+                                Spacer(modifier = Modifier.height(AppDimensions.paddingExtraSmall))
                                 Button(
                                     onClick = { loadTafseer(selectedTafseerId) },
                                     colors = ButtonDefaults.buttonColors(containerColor = MedinaSage)
                                 ) {
-                                    Text("Retry")
+                                    AppText.ButtonText(text = "Retry", color = PureAlabaster)
                                 }
                             }
                         }
@@ -313,8 +321,8 @@ fun AyahTafseerDialog(
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(14.sdp),
-                            contentPadding = PaddingValues(bottom = 12.sdp)
+                                .padding(AppDimensions.paddingMediumSmall),
+                            contentPadding = PaddingValues(bottom = AppDimensions.paddingMediumSmall)
                         ) {
                             item {
                                 AppText.Caption(
@@ -322,30 +330,41 @@ fun AyahTafseerDialog(
                                     color = DesertOchre,
                                     fontWeight = FontWeight.Bold
                                 )
-                                Spacer(modifier = Modifier.height(8.sdp))
-                                Text(
-                                    text = tafseerContent,
-                                    fontFamily = if (selectedOption.language == "ur") UrduTranslationFontFamily else androidx.compose.ui.text.font.FontFamily.Default,
-                                    fontSize = if (selectedOption.language == "ur") 17.sp else 14.sp,
-                                    lineHeight = if (selectedOption.language == "ur") 34.sp else 22.sp,
-                                    color = TextPrimary,
-                                    textAlign = if (selectedOption.language == "ur" || selectedOption.language == "ar") TextAlign.End else TextAlign.Start,
-                                    modifier = Modifier.padding(vertical = if (selectedOption.language == "ur") 6.sdp else 0.sdp)
-                                )
+                                Spacer(modifier = Modifier.height(AppDimensions.paddingSmall))
+                                when (selectedOption.language) {
+                                    "ur" -> AppText.UrduText(
+                                        text = tafseerContent,
+                                        fontSize = AppDimensions.textArabicPreview,
+                                        color = TextPrimary,
+                                        modifier = Modifier.padding(vertical = AppDimensions.paddingExtraSmall)
+                                    )
+                                    "ar" -> AppText.ArabicText(
+                                        text = tafseerContent,
+                                        fontSize = AppDimensions.textArabicPreview,
+                                        color = TextPrimary,
+                                        applySafePadding = false
+                                    )
+                                    else -> AppText.BodyMedium(
+                                        text = tafseerContent,
+                                        fontSizeOverride = AppDimensions.textBodyMedium,
+                                        color = TextPrimary,
+                                        textAlign = TextAlign.Start
+                                    )
+                                }
                             }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingRegular))
 
                 Button(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = MedinaSage),
-                    shape = RoundedCornerShape(14.sdp)
+                    shape = RoundedCornerShape(AppDimensions.cornerMediumLarge)
                 ) {
-                    Text(
+                    AppText.ButtonText(
                         text = "Close Tafseer",
                         fontWeight = FontWeight.Bold,
                         color = PureAlabaster

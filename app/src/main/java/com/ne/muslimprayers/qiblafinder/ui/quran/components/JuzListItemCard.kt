@@ -1,6 +1,5 @@
 package com.ne.muslimprayers.qiblafinder.ui.quran.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,23 +8,23 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextAlign
 import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DividerColor
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
+import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
+import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
 import com.ne.muslimprayers.qiblafinder.ui.quran.JuzInfo
@@ -49,72 +48,75 @@ fun JuzListItemCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            // Left: Juz Number + Calligraphic Arabic Juz Name + English Name & Verses Count
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(AppDimensions.avatarSize)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.secondaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
-                    AppText.TitleMedium(
-                        text = "${juz.number}",
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                }
+                AppText.TitleMedium(
+                    text = "${juz.number}",
+                    fontWeight = FontWeight.Bold,
+                    color = TextSecondary,
+                    modifier = Modifier.widthIn(min = AppDimensions.minNumberWidth)
+                )
 
                 Spacer(modifier = Modifier.width(AppDimensions.paddingSmall))
 
+                Box(
+                    modifier = Modifier.widthIn(min = AppDimensions.arabicTitleMinWidth),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AppText.ArabicText(
+                        text = juz.arabicName,
+                        color = MedinaSage,
+                        fontSize = AppDimensions.textArabicCardHero,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        applySafePadding = false
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(AppDimensions.paddingMediumSmall))
+
                 Column(modifier = Modifier.weight(1f)) {
                     AppText.TitleMedium(
-                        text = "Juz ${juz.number} - ${juz.englishName}",
+                        text = juz.englishName,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = TextPrimary,
                         maxLines = 1
                     )
                     AppText.BodySmall(
-                        text = "Starts at Surah ${juz.startingSurahName} (${juz.startingSurahNumber})",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = "Verses ${juz.totalVerses}",
+                        color = TextSecondary,
                         maxLines = 1
                     )
                 }
             }
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // Only show download button if NOT already downloaded
-                if (isDownloading) {
+            // Right: Cloud Download Button (hidden if already downloaded)
+            if (isDownloading) {
+                Box(
+                    modifier = Modifier.size(AppDimensions.buttonSmallHeight),
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(AppDimensions.iconMedium),
                         color = MedinaSage,
                         strokeWidth = AppDimensions.borderWidthThick
                     )
-                    Spacer(modifier = Modifier.width(AppDimensions.paddingSmall))
-                } else if (!isDownloaded && onDownloadClick != null) {
-                    IconButton(
-                        onClick = onDownloadClick,
-                        modifier = Modifier.size(AppDimensions.buttonSmallHeight)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Download,
-                            contentDescription = "Download Para Audio",
-                            tint = MedinaSage,
-                            modifier = Modifier.size(AppDimensions.iconMedium)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(AppDimensions.paddingTiny))
                 }
-
-                AppText.ArabicText(
-                    text = juz.arabicName,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontSize = 19.sp,
-                    maxLines = 1,
-                    applySafePadding = false
-                )
+            } else if (!isDownloaded && onDownloadClick != null) {
+                IconButton(
+                    onClick = onDownloadClick,
+                    modifier = Modifier.size(AppDimensions.buttonSmallHeight)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.CloudDownload,
+                        contentDescription = "Download Para Audio",
+                        tint = TextSecondary,
+                        modifier = Modifier.size(AppDimensions.iconLarge)
+                    )
+                }
             }
         }
     }

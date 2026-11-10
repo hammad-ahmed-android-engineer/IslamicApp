@@ -73,5 +73,6 @@ data class QiblaState(
     val isLocationAvailable: Boolean = false,
     val distanceToKaabaKm: Double = 0.0,
     val sensorAccuracy: Int = 3,
-    val isSensorAvailable: Boolean = true
+    val isSensorAvailable: Boolean = true,
+    val tiltDegrees: Float = 0f
 )

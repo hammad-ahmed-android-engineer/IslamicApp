@@ -4,6 +4,7 @@ import com.ne.muslimprayers.qiblafinder.core.common.Resource
 import com.ne.muslimprayers.qiblafinder.data.local.QuranDatabaseHelper
 import com.ne.muslimprayers.qiblafinder.data.remote.api.QuranApiService
 import com.ne.muslimprayers.qiblafinder.domain.model.Ayah
+import com.ne.muslimprayers.qiblafinder.domain.model.JuzStartBoundary
 import com.ne.muslimprayers.qiblafinder.domain.model.Surah
 import com.ne.muslimprayers.qiblafinder.domain.repository.QuranRepository
 import kotlinx.coroutines.flow.Flow
@@ -112,4 +113,7 @@ class QuranRepositoryImpl @Inject constructor(
             emit(Resource.Error("Could not load Juz verses: ${e.localizedMessage ?: "Unknown error"}"))
         }
     }
+
+    override suspend fun getJuzStartBoundaries(): Map<Int, JuzStartBoundary> =
+        quranDbHelper.getJuzStartBoundaries()
 }

@@ -163,6 +163,7 @@ fun QuranScreen(
             allSurahs = state.surahs,
             isJuzMode = state.selectedJuz != null,
             juzNumber = state.selectedJuz?.number,
+            selectedJuz = state.selectedJuz,
             isLoading = state.isLoadingVerses,
             errorMessage = state.versesError,
             currentlyPlayingAyah = state.currentlyPlayingAyah,
@@ -196,6 +197,7 @@ fun QuranScreen(
             },
             onRetry = viewModel::retryLoadVerses,
             onOpenTafseer = { ayah -> selectedTafseerAyah = ayah },
+            onToggleTranslation = viewModel::toggleTranslation,
             onCopyAyah = { ayah ->
                 val fontConfig = ArabicFontManager.getTypographyConfig(state.selectedQuranFont)
                 val isIndoPakEffective = state.useIndoPakScript || fontConfig.prefersIndoPakScript
@@ -357,8 +359,11 @@ fun QuranScreen(
                             ) {
                                 items(state.filteredSurahs, key = { it.number }) { surah ->
                                     val isSurahDownloaded = state.downloadedSurahNumbers.contains(surah.number)
+                                    val isFav = state.favoriteSurahNumbers.contains(surah.number)
                                     SurahListItemCard(
                                         surah = surah,
+                                        isFavorite = isFav,
+                                        onFavoriteClick = { viewModel.toggleFavorite(surah.number) },
                                         isDownloaded = isSurahDownloaded,
                                         isDownloading = state.downloadStatus.isDownloading && state.downloadStatus.targetKey == "surah_${surah.number}",
                                         onDownloadClick = { viewModel.requestDownloadSurah(surah) },
@@ -427,6 +432,8 @@ fun QuranScreen(
                                     val isSurahDownloaded = state.downloadedSurahNumbers.contains(surah.number)
                                     SurahListItemCard(
                                         surah = surah,
+                                        isFavorite = true,
+                                        onFavoriteClick = { viewModel.toggleFavorite(surah.number) },
                                         isDownloaded = isSurahDownloaded,
                                         isDownloading = state.downloadStatus.isDownloading && state.downloadStatus.targetKey == "surah_${surah.number}",
                                         onDownloadClick = { viewModel.requestDownloadSurah(surah) },

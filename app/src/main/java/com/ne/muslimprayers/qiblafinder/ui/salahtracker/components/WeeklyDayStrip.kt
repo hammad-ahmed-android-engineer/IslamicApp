@@ -18,15 +18,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 import com.ne.muslimprayers.qiblafinder.core.theme.DividerColor
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
@@ -34,9 +32,8 @@ import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSageLight
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
-import com.ne.muslimprayers.qiblafinder.core.theme.ssp
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
+import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
 import com.ne.muslimprayers.qiblafinder.ui.salahtracker.DayTrackerUiModel
 
 @Composable
@@ -47,7 +44,7 @@ fun WeeklyDayStrip(
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.sdp)
+        horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingExtraSmall)
     ) {
         days.forEach { day ->
             DayItemCard(
@@ -72,50 +69,42 @@ private fun DayItemCard(
     val textColor = if (day.isSelected) PureAlabaster else TextPrimary
     val subTextColor = if (day.isSelected) MedinaSageLight else TextSecondary
 
-    Surface(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.sdp))
-            .clickableDebounced { onClick() }
-            .border(
-                width = if (day.isSelected) 2.sdp else 1.sdp,
-                color = if (day.isSelected) MedinaSage else if (day.isToday) DesertOchre else DividerColor,
-                shape = RoundedCornerShape(16.sdp)
-            ),
-        shape = RoundedCornerShape(16.sdp),
-        color = backgroundColor,
-        tonalElevation = if (day.isSelected) 4.sdp else 1.sdp
+    IslamicCard(
+        modifier = modifier,
+        backgroundColor = backgroundColor,
+        borderColor = if (day.isSelected) MedinaSage else if (day.isToday) DesertOchre else DividerColor,
+        borderWidth = if (day.isSelected) AppDimensions.borderWidthThick else AppDimensions.borderWidthThin,
+        cornerRadius = AppDimensions.cornerLarge,
+        contentPadding = AppDimensions.paddingTiny,
+        elevation = if (day.isSelected) AppDimensions.elevationMedium else AppDimensions.elevationSubtle,
+        onClick = onClick
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 10.sdp, horizontal = 2.sdp),
+                .padding(vertical = AppDimensions.paddingExtraSmall),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Day Name (e.g. Mon)
-            Text(
+            AppText.Caption(
                 text = day.dayName,
-                fontSize = 11.ssp,
                 fontWeight = if (day.isSelected) FontWeight.Bold else FontWeight.Medium,
                 color = subTextColor
             )
 
-            Spacer(modifier = Modifier.height(4.sdp))
+            Spacer(modifier = Modifier.height(AppDimensions.paddingTiny))
 
-            // Day Number (e.g. 24)
-            Text(
+            AppText.TitleSmall(
                 text = "${day.dayNumber}",
-                fontSize = 15.ssp,
                 fontWeight = FontWeight.Bold,
                 color = textColor
             )
 
-            Spacer(modifier = Modifier.height(6.sdp))
+            Spacer(modifier = Modifier.height(AppDimensions.paddingExtraSmall))
 
-            // Completion badge indicator
             Box(
                 modifier = Modifier
-                    .size(18.sdp)
+                    .size(AppDimensions.iconRegular)
                     .clip(CircleShape)
                     .background(
                         when {
@@ -133,33 +122,35 @@ private fun DayItemCard(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Completed",
                         tint = if (day.isSelected) MedinaSage else PureAlabaster,
-                        modifier = Modifier.size(12.sdp)
+                        modifier = Modifier.size(AppDimensions.iconTiny)
                     )
                 } else if (day.completedCount > 0) {
-                    Text(
+                    AppText.Caption(
                         text = "${day.completedCount}",
-                        fontSize = 9.ssp,
+                        fontSizeOverride = AppDimensions.textMicro,
                         fontWeight = FontWeight.Bold,
-                        color = if (day.isSelected) PureAlabaster else PureAlabaster
+                        color = PureAlabaster
                     )
                 } else {
                     Box(
                         modifier = Modifier
-                            .size(5.sdp)
+                            .size(AppDimensions.paddingTiny)
                             .clip(CircleShape)
-                            .background(if (day.isSelected) PureAlabaster.copy(alpha = 0.5f) else TextSecondary.copy(alpha = 0.3f))
+                            .background(
+                                if (day.isSelected) PureAlabaster.copy(alpha = 0.5f)
+                                else TextSecondary.copy(alpha = 0.3f)
+                            )
                     )
                 }
             }
 
-            // Today indicator dot under badge
             if (day.isToday) {
-                Spacer(modifier = Modifier.height(3.sdp))
+                Spacer(modifier = Modifier.height(AppDimensions.paddingMicro))
                 Box(
                     modifier = Modifier
-                        .size(4.sdp)
+                        .size(AppDimensions.paddingTiny)
                         .clip(CircleShape)
-                        .background(if (day.isSelected) DesertOchre else DesertOchre)
+                        .background(DesertOchre)
                 )
             }
         }

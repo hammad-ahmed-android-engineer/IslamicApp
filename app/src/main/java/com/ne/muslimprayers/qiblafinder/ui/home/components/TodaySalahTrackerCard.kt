@@ -33,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 import com.ne.muslimprayers.qiblafinder.core.theme.DividerColor
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
@@ -41,11 +42,10 @@ import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
 import com.ne.muslimprayers.qiblafinder.core.theme.WarmParchment
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
-import com.ne.muslimprayers.qiblafinder.core.theme.ssp
 import com.ne.muslimprayers.qiblafinder.domain.model.DailySalahRecord
 import com.ne.muslimprayers.qiblafinder.domain.model.PrayerType
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
+import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
 
 @Composable
 fun TodaySalahTrackerCard(
@@ -62,19 +62,16 @@ fun TodaySalahTrackerCard(
         label = "home_tracker_progress"
     )
 
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.sdp))
-            .border(1.sdp, DividerColor, RoundedCornerShape(20.sdp)),
-        shape = RoundedCornerShape(20.sdp),
-        color = PureAlabaster,
-        tonalElevation = 2.sdp
+    IslamicCard(
+        modifier = modifier.fillMaxWidth(),
+        backgroundColor = PureAlabaster,
+        borderColor = DividerColor,
+        cornerRadius = AppDimensions.cornerExtraLarge,
+        elevation = AppDimensions.elevationLow,
+        contentPadding = AppDimensions.paddingMediumSmall
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.sdp)
+            modifier = Modifier.fillMaxWidth()
         ) {
             // Header Row
             Row(
@@ -84,11 +81,11 @@ fun TodaySalahTrackerCard(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.sdp)
+                    horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingRegular)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(34.sdp)
+                            .size(AppDimensions.iconButtonCompact)
                             .clip(CircleShape)
                             .background(MedinaSageLight),
                         contentAlignment = Alignment.Center
@@ -97,7 +94,7 @@ fun TodaySalahTrackerCard(
                             imageVector = Icons.Default.EventAvailable,
                             contentDescription = null,
                             tint = MedinaSage,
-                            modifier = Modifier.size(18.sdp)
+                            modifier = Modifier.size(AppDimensions.iconRegular)
                         )
                     }
 
@@ -117,12 +114,12 @@ fun TodaySalahTrackerCard(
                 // View History Pill Button
                 Row(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(12.sdp))
+                        .clip(RoundedCornerShape(AppDimensions.cornerMedium))
                         .background(MedinaSageLight.copy(alpha = 0.7f))
                         .clickableDebounced { onNavigateToFullTracker() }
-                        .padding(horizontal = 8.sdp, vertical = 4.sdp),
+                        .padding(horizontal = AppDimensions.paddingSmall, vertical = AppDimensions.paddingTiny),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.sdp)
+                    horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingTiny)
                 ) {
                     AppText.Caption(
                         text = "Weekly",
@@ -133,12 +130,12 @@ fun TodaySalahTrackerCard(
                         imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                         contentDescription = "View Weekly History",
                         tint = MedinaSage,
-                        modifier = Modifier.size(12.sdp)
+                        modifier = Modifier.size(AppDimensions.iconTiny)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.sdp))
+            Spacer(modifier = Modifier.height(AppDimensions.paddingMediumSmall))
 
             // Progress text & bar
             Row(
@@ -158,20 +155,20 @@ fun TodaySalahTrackerCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(6.sdp))
+            Spacer(modifier = Modifier.height(AppDimensions.paddingExtraSmall))
 
             LinearProgressIndicator(
                 progress = { animatedProgress },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(6.sdp)
+                    .height(AppDimensions.progressLinearHeight)
                     .clip(CircleShape),
                 color = if (completedCount == 5) DesertOchre else MedinaSage,
                 trackColor = WarmParchment,
                 strokeCap = StrokeCap.Round
             )
 
-            Spacer(modifier = Modifier.height(12.sdp))
+            Spacer(modifier = Modifier.height(AppDimensions.paddingMediumSmall))
 
             // 5 Prayers interactive checkbox items
             val prayers = listOf(
@@ -184,7 +181,7 @@ fun TodaySalahTrackerCard(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.sdp)
+                horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingExtraSmall)
             ) {
                 prayers.forEach { prayer ->
                     val isOffered = record?.isPrayerOffered(prayer) == true
@@ -218,26 +215,26 @@ private fun HomePrayerCheckItem(
 
     Surface(
         modifier = modifier
-            .clip(RoundedCornerShape(12.sdp))
+            .clip(RoundedCornerShape(AppDimensions.cornerMedium))
             .clickableDebounced { onToggle() }
-            .border(1.sdp, borderColor, RoundedCornerShape(12.sdp)),
+            .border(AppDimensions.borderWidthThin, borderColor, RoundedCornerShape(AppDimensions.cornerMedium)),
         color = bgColor,
-        shape = RoundedCornerShape(12.sdp)
+        shape = RoundedCornerShape(AppDimensions.cornerMedium)
     ) {
         Column(
             modifier = Modifier
-                .padding(vertical = 8.sdp, horizontal = 2.sdp),
+                .padding(vertical = AppDimensions.paddingSmall, horizontal = AppDimensions.paddingMicro),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             // Check icon box
             Box(
                 modifier = Modifier
-                    .size(20.sdp)
+                    .size(AppDimensions.iconMedium)
                     .clip(CircleShape)
                     .background(if (isOffered) MedinaSage else PureAlabaster)
                     .border(
-                        1.sdp,
+                        AppDimensions.borderWidthThin,
                         if (isOffered) MedinaSage else DividerColor,
                         CircleShape
                     ),
@@ -248,12 +245,12 @@ private fun HomePrayerCheckItem(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Offered",
                         tint = PureAlabaster,
-                        modifier = Modifier.size(14.sdp)
+                        modifier = Modifier.size(AppDimensions.iconExtraSmall)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(4.sdp))
+            Spacer(modifier = Modifier.height(AppDimensions.paddingTiny))
 
             AppText.Caption(
                 text = prayer.displayName,

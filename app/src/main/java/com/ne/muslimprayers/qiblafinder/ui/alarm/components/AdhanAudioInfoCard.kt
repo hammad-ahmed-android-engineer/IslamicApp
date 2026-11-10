@@ -1,7 +1,9 @@
 package com.ne.muslimprayers.qiblafinder.ui.alarm.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,23 +12,26 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.filled.WbTwilight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchreLight
 import com.ne.muslimprayers.qiblafinder.core.theme.DividerColor
@@ -36,7 +41,6 @@ import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
 import com.ne.muslimprayers.qiblafinder.core.theme.WarmParchment
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.domain.model.PrayerType
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
@@ -53,36 +57,78 @@ fun AdhanAudioInfoCard(
 ) {
     IslamicCard(
         backgroundColor = PureAlabaster,
-        borderColor = if (masterEnabled) MedinaSage.copy(alpha = 0.4f) else DividerColor
+        borderColor = if (masterEnabled) MedinaSage.copy(alpha = 0.35f) else DividerColor
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(10.sdp)) {
-            // Master Notifications Switch Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
+                Box(
+                    modifier = Modifier
+                        .size(AppDimensions.avatarSize)
+                        .clip(CircleShape)
+                        .background(if (masterEnabled) MedinaSageLight else WarmParchment),
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = if (masterEnabled) Icons.Default.NotificationsActive else Icons.Default.NotificationsOff,
                         contentDescription = null,
                         tint = if (masterEnabled) MedinaSage else TextSecondary,
-                        modifier = Modifier.size(22.sdp)
+                        modifier = Modifier.size(AppDimensions.iconMedium)
                     )
-                    Spacer(modifier = Modifier.width(10.sdp))
-                    Column {
-                        AppText.TitleMedium(
-                            text = "Prayer Notifications & Adhan",
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary,
-                            maxLines = 1
+                }
+                Spacer(modifier = Modifier.width(AppDimensions.paddingMediumSmall))
+                Column(modifier = Modifier.weight(1f)) {
+                    AppText.TitleMedium(
+                        text = "Prayer Alerts",
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary,
+                        maxLines = 1
+                    )
+                    AppText.Caption(
+                        text = if (masterEnabled) "Daily prayer notifications active" else "All prayer notifications muted",
+                        color = if (masterEnabled) MedinaSage else TextSecondary,
+                        maxLines = 1
+                    )
+                }
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingSmall)
+            ) {
+                Surface(
+                    onClick = { onTogglePreview(PrayerType.DHUHR) },
+                    shape = RoundedCornerShape(AppDimensions.cornerMediumSmall),
+                    color = if (isPlayingPreview) DesertOchre else WarmParchment,
+                    border = BorderStroke(
+                        AppDimensions.borderWidthHairline,
+                        if (isPlayingPreview) DesertOchre else DividerColor
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(
+                            horizontal = AppDimensions.paddingRegular,
+                            vertical = AppDimensions.paddingExtraSmall
+                        ),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingTiny)
+                    ) {
+                        Icon(
+                            imageVector = if (isPlayingPreview) Icons.Default.Stop else Icons.Default.PlayArrow,
+                            contentDescription = "Test Sound",
+                            tint = if (isPlayingPreview) PureAlabaster else MedinaSage,
+                            modifier = Modifier.size(AppDimensions.iconExtraSmall)
                         )
                         AppText.Caption(
-                            text = if (masterEnabled) "Daily prayer alerts are active" else "All prayer alerts are muted",
-                            color = if (masterEnabled) MedinaSage else TextSecondary
+                            text = if (isPlayingPreview) "Stop" else "Test",
+                            fontWeight = FontWeight.Bold,
+                            color = if (isPlayingPreview) PureAlabaster else TextPrimary
                         )
                     }
                 }
@@ -98,130 +144,119 @@ fun AdhanAudioInfoCard(
                     )
                 )
             }
+        }
+    }
+}
 
-            HorizontalDivider(color = DividerColor.copy(alpha = 0.6f), thickness = 0.8.dp)
-
-            // Quick Enable All / Disable All + Adhan Preview Buttons
+@Composable
+fun SunriseSunsetHeaderCard(
+    sunriseTime: String,
+    sunsetTime: String
+) {
+    IslamicCard(
+        backgroundColor = PureAlabaster,
+        borderColor = DesertOchre.copy(alpha = 0.35f)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            // Sunrise Column
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.sdp)
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
-                Surface(
-                    onClick = onEnableAll,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(10.sdp),
-                    color = MedinaSageLight,
-                    border = BorderStroke(0.8.dp, MedinaSage.copy(alpha = 0.35f))
+                Box(
+                    modifier = Modifier
+                        .size(AppDimensions.badgeCircleMedium)
+                        .clip(CircleShape)
+                        .background(DesertOchreLight.copy(alpha = 0.7f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Row(
-                        modifier = Modifier.padding(vertical = 8.sdp, horizontal = 8.sdp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.NotificationsActive,
-                            contentDescription = null,
-                            tint = MedinaSage,
-                            modifier = Modifier.size(15.sdp)
-                        )
-                        Spacer(modifier = Modifier.width(5.sdp))
-                        AppText.BodySmall(
-                            text = "Enable All",
-                            fontWeight = FontWeight.Bold,
-                            color = MedinaSage
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.WbSunny,
+                        contentDescription = "Sunrise",
+                        tint = DesertOchre,
+                        modifier = Modifier.size(AppDimensions.iconMedium)
+                    )
                 }
-
-                Surface(
-                    onClick = onDisableAll,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(10.sdp),
-                    color = WarmParchment,
-                    border = BorderStroke(0.8.dp, DividerColor)
-                ) {
+                Spacer(modifier = Modifier.width(AppDimensions.paddingRegular))
+                Column {
                     Row(
-                        modifier = Modifier.padding(vertical = 8.sdp, horizontal = 8.sdp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingTiny)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.NotificationsOff,
-                            contentDescription = null,
-                            tint = TextSecondary,
-                            modifier = Modifier.size(15.sdp)
+                        AppText.Caption(
+                            text = "Sunrise",
+                            color = TextSecondary,
+                            fontWeight = FontWeight.SemiBold
                         )
-                        Spacer(modifier = Modifier.width(5.sdp))
-                        AppText.BodySmall(
-                            text = "Disable All",
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextSecondary
+                        AppText.Caption(
+                            text = "الشروق",
+                            color = DesertOchre,
+                            fontWeight = FontWeight.Bold
                         )
                     }
+                    Spacer(modifier = Modifier.height(AppDimensions.paddingMicro))
+                    AppText.TitleMedium(
+                        text = sunriseTime,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
                 }
             }
 
-            // Adhan Audio Preview Row
+            VerticalDivider(
+                modifier = Modifier.height(AppDimensions.buttonSmallHeight),
+                thickness = AppDimensions.borderWidthThin,
+                color = DividerColor
+            )
+
+            // Sunset Column
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.sdp),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
-                val isFajrPlaying = isPlayingPreview && previewPrayerType == PrayerType.FAJR
-                val isMakkahPlaying = isPlayingPreview && previewPrayerType != PrayerType.FAJR
-
-                Surface(
-                    onClick = { onTogglePreview(PrayerType.FAJR) },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(10.sdp),
-                    color = if (isFajrPlaying) DesertOchre else DesertOchreLight.copy(alpha = 0.65f),
-                    border = BorderStroke(0.8.dp, DesertOchre.copy(alpha = 0.4f))
+                Box(
+                    modifier = Modifier
+                        .size(AppDimensions.badgeCircleMedium)
+                        .clip(CircleShape)
+                        .background(MedinaSageLight),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Row(
-                        modifier = Modifier.padding(vertical = 7.sdp, horizontal = 8.sdp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = if (isFajrPlaying) Icons.Default.Stop else Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            tint = if (isFajrPlaying) PureAlabaster else DesertOchre,
-                            modifier = Modifier.size(15.sdp)
-                        )
-                        Spacer(modifier = Modifier.width(4.sdp))
-                        AppText.Caption(
-                            text = if (isFajrPlaying) "Stop Fajr" else "Test Fajr Adhan",
-                            fontWeight = FontWeight.Bold,
-                            color = if (isFajrPlaying) PureAlabaster else DesertOchre
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.WbTwilight,
+                        contentDescription = "Sunset",
+                        tint = MedinaSage,
+                        modifier = Modifier.size(AppDimensions.iconMedium)
+                    )
                 }
-
-                Surface(
-                    onClick = { onTogglePreview(PrayerType.DHUHR) },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(10.sdp),
-                    color = if (isMakkahPlaying) MedinaSage else WarmParchment,
-                    border = BorderStroke(0.8.dp, if (isMakkahPlaying) MedinaSage else DividerColor)
-                ) {
+                Spacer(modifier = Modifier.width(AppDimensions.paddingRegular))
+                Column {
                     Row(
-                        modifier = Modifier.padding(vertical = 7.sdp, horizontal = 8.sdp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingTiny)
                     ) {
-                        Icon(
-                            imageVector = if (isMakkahPlaying) Icons.Default.Stop else Icons.Default.MusicNote,
-                            contentDescription = null,
-                            tint = if (isMakkahPlaying) PureAlabaster else MedinaSage,
-                            modifier = Modifier.size(15.sdp)
-                        )
-                        Spacer(modifier = Modifier.width(4.sdp))
                         AppText.Caption(
-                            text = if (isMakkahPlaying) "Stop Adhan" else "Test Makkah Adhan",
-                            fontWeight = FontWeight.Bold,
-                            color = if (isMakkahPlaying) PureAlabaster else TextPrimary
+                            text = "Sunset",
+                            color = TextSecondary,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        AppText.Caption(
+                            text = "الغروب",
+                            color = MedinaSage,
+                            fontWeight = FontWeight.Bold
                         )
                     }
+                    Spacer(modifier = Modifier.height(AppDimensions.paddingMicro))
+                    AppText.TitleMedium(
+                        text = sunsetTime,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
                 }
             }
         }

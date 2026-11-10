@@ -25,8 +25,6 @@ import androidx.compose.material.icons.filled.WbTwilight
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -36,6 +34,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchreLight
 import com.ne.muslimprayers.qiblafinder.core.theme.DividerColor
@@ -45,10 +44,9 @@ import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSageLight
 import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
-import com.ne.muslimprayers.qiblafinder.core.theme.ssp
 import com.ne.muslimprayers.qiblafinder.domain.model.PrayerType
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
+import com.ne.muslimprayers.qiblafinder.ui.components.IslamicCard
 import com.ne.muslimprayers.qiblafinder.ui.salahtracker.SalahPrayerItemUi
 
 @Composable
@@ -83,20 +81,22 @@ fun PrayerChecklistSection(
             }
 
             // Quick Mark All / Reset
-            Row(horizontalArrangement = Arrangement.spacedBy(6.sdp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingExtraSmall)) {
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.sdp))
+                        .clip(RoundedCornerShape(AppDimensions.cornerSmall))
                         .background(MedinaSageLight)
                         .clickableDebounced {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             onMarkAll(true)
                         }
-                        .padding(horizontal = 8.sdp, vertical = 4.sdp)
+                        .padding(
+                            horizontal = AppDimensions.paddingSmall,
+                            vertical = AppDimensions.paddingTiny
+                        )
                 ) {
-                    Text(
+                    AppText.Caption(
                         text = "Mark All",
-                        fontSize = 11.ssp,
                         fontWeight = FontWeight.Bold,
                         color = MedinaSage
                     )
@@ -105,17 +105,19 @@ fun PrayerChecklistSection(
                 if (completedCount > 0) {
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.sdp))
+                            .clip(RoundedCornerShape(AppDimensions.cornerSmall))
                             .background(DividerColor.copy(alpha = 0.5f))
                             .clickableDebounced {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 onMarkAll(false)
                             }
-                            .padding(horizontal = 8.sdp, vertical = 4.sdp)
+                            .padding(
+                                horizontal = AppDimensions.paddingSmall,
+                                vertical = AppDimensions.paddingTiny
+                            )
                     ) {
-                        Text(
+                        AppText.Caption(
                             text = "Reset",
-                            fontSize = 11.ssp,
                             fontWeight = FontWeight.Medium,
                             color = TextSecondary
                         )
@@ -124,10 +126,10 @@ fun PrayerChecklistSection(
             }
         }
 
-        Spacer(modifier = Modifier.height(10.sdp))
+        Spacer(modifier = Modifier.height(AppDimensions.paddingRegular))
 
         // Checklist of 5 prayers
-        Column(verticalArrangement = Arrangement.spacedBy(8.sdp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingSmall)) {
             prayers.forEach { prayer ->
                 PrayerCheckboxCard(
                     prayer = prayer,
@@ -165,20 +167,17 @@ private fun PrayerCheckboxCard(
         else -> Icons.Default.WbSunny
     }
 
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.sdp))
-            .clickableDebounced { onToggle() }
-            .border(1.sdp, borderColor, RoundedCornerShape(16.sdp)),
-        shape = RoundedCornerShape(16.sdp),
-        color = cardBgColor,
-        tonalElevation = if (prayer.isOffered) 2.sdp else 1.sdp
+    IslamicCard(
+        modifier = Modifier.fillMaxWidth(),
+        backgroundColor = cardBgColor,
+        borderColor = borderColor,
+        cornerRadius = AppDimensions.cornerLarge,
+        contentPadding = AppDimensions.paddingMediumSmall,
+        elevation = if (prayer.isOffered) AppDimensions.elevationLow else AppDimensions.elevationSubtle,
+        onClick = onToggle
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.sdp, vertical = 12.sdp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -186,10 +185,9 @@ private fun PrayerCheckboxCard(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f)
             ) {
-                // Icon circle
                 Box(
                     modifier = Modifier
-                        .size(36.sdp)
+                        .size(AppDimensions.buttonSmallHeight)
                         .clip(CircleShape)
                         .background(if (prayer.isOffered) MedinaSage else DesertOchreLight),
                     contentAlignment = Alignment.Center
@@ -198,16 +196,16 @@ private fun PrayerCheckboxCard(
                         imageVector = if (prayer.isOffered) Icons.Default.Check else icon,
                         contentDescription = null,
                         tint = if (prayer.isOffered) PureAlabaster else DesertOchre,
-                        modifier = Modifier.size(18.sdp)
+                        modifier = Modifier.size(AppDimensions.iconRegular)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.sdp))
+                Spacer(modifier = Modifier.width(AppDimensions.paddingMediumSmall))
 
                 Column {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.sdp)
+                        horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingExtraSmall)
                     ) {
                         AppText.TitleMedium(
                             text = prayer.englishName,
@@ -215,15 +213,14 @@ private fun PrayerCheckboxCard(
                             color = if (prayer.isOffered) MedinaSageDark else TextPrimary
                         )
 
-                        Text(
+                        AppText.BodySmall(
                             text = "(${prayer.arabicName})",
-                            fontSize = 12.ssp,
                             fontWeight = FontWeight.Normal,
                             color = MedinaSage
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(2.sdp))
+                    Spacer(modifier = Modifier.height(AppDimensions.paddingMicro))
 
                     AppText.BodySmall(
                         text = prayer.description,
@@ -232,7 +229,6 @@ private fun PrayerCheckboxCard(
                 }
             }
 
-            // Material 3 Checkbox
             Checkbox(
                 checked = prayer.isOffered,
                 onCheckedChange = { onToggle() },

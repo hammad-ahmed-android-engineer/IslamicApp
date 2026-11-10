@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.scrollBy
@@ -11,9 +12,11 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,7 +32,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
@@ -37,12 +39,12 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -53,14 +55,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.ne.muslimprayers.qiblafinder.R
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchre
-import com.ne.muslimprayers.qiblafinder.core.theme.DesertOchreLight
 import com.ne.muslimprayers.qiblafinder.core.theme.DividerColor
 import com.ne.muslimprayers.qiblafinder.core.theme.HeroBannerGradient
 import com.ne.muslimprayers.qiblafinder.core.theme.MedinaSage
@@ -69,16 +70,16 @@ import com.ne.muslimprayers.qiblafinder.core.theme.PureAlabaster
 import com.ne.muslimprayers.qiblafinder.core.theme.TextPrimary
 import com.ne.muslimprayers.qiblafinder.core.theme.TextSecondary
 import com.ne.muslimprayers.qiblafinder.core.theme.WarmParchment
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.core.utils.clickableDebounced
 import com.ne.muslimprayers.qiblafinder.domain.model.Ayah
 import com.ne.muslimprayers.qiblafinder.domain.model.Surah
 import com.ne.muslimprayers.qiblafinder.ui.components.AppText
 import com.ne.muslimprayers.qiblafinder.ui.components.ErrorState
 import com.ne.muslimprayers.qiblafinder.ui.components.LoadingState
+import com.ne.muslimprayers.qiblafinder.ui.quran.JuzInfo
 import com.ne.muslimprayers.qiblafinder.ui.quran.util.QuranDownloadStatus
 import com.ne.muslimprayers.qiblafinder.ui.quran.util.QuranStaticData
-import com.ne.muslimprayers.qiblafinder.ui.quran.util.QuranTextFormatter
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
@@ -103,6 +104,7 @@ fun SurahDetailReader(
     bookmarkedAyahKeys: Set<String> = emptySet(),
     isJuzMode: Boolean = false,
     juzNumber: Int? = null,
+    selectedJuz: JuzInfo? = null,
     isLandscape: Boolean,
     isFullScreen: Boolean = false,
     isAutoScrollEnabled: Boolean = true,
@@ -119,18 +121,29 @@ fun SurahDetailReader(
     onRetry: () -> Unit,
     onCopyAyah: (Ayah) -> Unit,
     onShareAyah: (Ayah) -> Unit,
-    onOpenTafseer: (Ayah) -> Unit = {}
+    onOpenTafseer: (Ayah) -> Unit = {},
+    onToggleTranslation: () -> Unit = {}
 ) {
-    var showWaqfGuideDialog by remember { mutableStateOf(false) }
     var isContinuousScrolling by remember { mutableStateOf(false) }
     var scrollSpeed by remember { mutableFloatStateOf(1.0f) }
     val listState = rememberLazyListState()
 
-    // Smooth continuous auto-scrolling (teleprompter mode)
+    // Smooth continuous auto-scrolling that seamlessly pauses during manual user touch/drag/fling
+    // and automatically resumes from the new page/scroll position once the user releases!
     LaunchedEffect(isContinuousScrolling, scrollSpeed) {
         if (isContinuousScrolling) {
             while (isActive) {
-                listState.scrollBy(1.5f * scrollSpeed)
+                try {
+                    listState.scrollBy(1.5f * scrollSpeed)
+                } catch (e: CancellationException) {
+                    if (!isActive) throw e
+                    // User manually scrolled the page; wait until manual scroll gesture finishes,
+                    // then resume auto-scrolling from where the user left the page.
+                    while (isActive && listState.isScrollInProgress) {
+                        delay(50L)
+                    }
+                    delay(120L)
+                }
                 delay(16L)
             }
         }
@@ -146,10 +159,6 @@ fun SurahDetailReader(
                 listState.animateScrollToItem(targetIndex)
             }
         }
-    }
-
-    if (showWaqfGuideDialog) {
-        TajweedWaqfGuideDialog(onDismiss = { showWaqfGuideDialog = false })
     }
 
     val isDownloadingThis = downloadStatus.isDownloading &&
@@ -170,7 +179,7 @@ fun SurahDetailReader(
             ) {
                 Surface(
                     color = WarmParchment,
-                    tonalElevation = 2.sdp,
+                    tonalElevation = AppDimensions.elevationLow,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
@@ -178,35 +187,54 @@ fun SurahDetailReader(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .statusBarsPadding()
-                                .padding(horizontal = 8.sdp, vertical = 4.sdp),
+                                .padding(
+                                    horizontal = AppDimensions.paddingSmall,
+                                    vertical = AppDimensions.paddingTiny
+                                ),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             IconButton(
                                 onClick = onBackClick,
-                                modifier = Modifier.size(34.sdp)
+                                modifier = Modifier.size(AppDimensions.iconButtonCompact)
                             ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = "Back",
                                     tint = TextPrimary,
-                                    modifier = Modifier.size(20.sdp)
+                                    modifier = Modifier.size(AppDimensions.iconMedium)
                                 )
                             }
 
-                            Spacer(modifier = Modifier.width(4.sdp))
+                            Spacer(modifier = Modifier.width(AppDimensions.paddingTiny))
+
+                            val (headerTitle, headerSubtitle) = remember(
+                                isJuzMode,
+                                surah,
+                                verses,
+                                selectedJuz,
+                                allSurahs
+                            ) {
+                                resolveReaderHeaderText(
+                                    isJuzMode = isJuzMode,
+                                    surah = surah,
+                                    verses = verses,
+                                    selectedJuz = selectedJuz,
+                                    allSurahs = allSurahs
+                                )
+                            }
 
                             Column(
                                 modifier = Modifier.weight(1f),
                                 verticalArrangement = Arrangement.Center
                             ) {
                                 AppText.TitleMedium(
-                                    text = if (isJuzMode) surah.name else "Surah ${surah.name} (${surah.arabicName})",
+                                    text = headerTitle,
                                     fontWeight = FontWeight.Bold,
                                     color = TextPrimary,
                                     maxLines = 1
                                 )
                                 AppText.BodySmall(
-                                    text = "${surah.englishMeaning} • ${verses.size.takeIf { it > 0 } ?: surah.totalVerses} Verses",
+                                    text = headerSubtitle,
                                     color = TextSecondary,
                                     maxLines = 1
                                 )
@@ -214,30 +242,30 @@ fun SurahDetailReader(
 
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(2.sdp)
+                                horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingMicro)
                             ) {
                                 // Only show Download button if NOT already downloaded
                                 if (isDownloadingThis) {
                                     Box(
-                                        modifier = Modifier.size(34.sdp),
+                                        modifier = Modifier.size(AppDimensions.iconButtonCompact),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         CircularProgressIndicator(
-                                            modifier = Modifier.size(16.sdp),
+                                            modifier = Modifier.size(AppDimensions.iconSmall),
                                             color = MedinaSage,
-                                            strokeWidth = 2.dp
+                                            strokeWidth = AppDimensions.borderWidthThick
                                         )
                                     }
                                 } else if (!isDownloaded) {
                                     IconButton(
                                         onClick = onDownloadSurah,
-                                        modifier = Modifier.size(34.sdp)
+                                        modifier = Modifier.size(AppDimensions.iconButtonCompact)
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Download,
                                             contentDescription = "Download Audio",
                                             tint = MedinaSage,
-                                            modifier = Modifier.size(20.sdp)
+                                            modifier = Modifier.size(AppDimensions.iconMedium)
                                         )
                                     }
                                 }
@@ -245,26 +273,26 @@ fun SurahDetailReader(
                                 // Full-Screen Toggle
                                 IconButton(
                                     onClick = onToggleFullScreen,
-                                    modifier = Modifier.size(34.sdp)
+                                    modifier = Modifier.size(AppDimensions.iconButtonCompact)
                                 ) {
                                     Icon(
                                         imageVector = if (isFullScreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
                                         contentDescription = "Full Screen",
                                         tint = MedinaSage,
-                                        modifier = Modifier.size(20.sdp)
+                                        modifier = Modifier.size(AppDimensions.iconMedium)
                                     )
                                 }
 
                                 // Quran Settings Button
                                 IconButton(
                                     onClick = onOpenSettings,
-                                    modifier = Modifier.size(34.sdp)
+                                    modifier = Modifier.size(AppDimensions.iconButtonCompact)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Settings,
                                         contentDescription = "Quran Settings",
                                         tint = MedinaSage,
-                                        modifier = Modifier.size(20.sdp)
+                                        modifier = Modifier.size(AppDimensions.iconMedium)
                                     )
                                 }
                             }
@@ -275,122 +303,10 @@ fun SurahDetailReader(
                                 progress = { downloadStatus.progressPercentage / 100f },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(3.sdp),
+                                    .height(AppDimensions.progressBarHeight),
                                 color = MedinaSage,
                                 trackColor = MedinaSageLight
                             )
-                        }
-                    }
-                }
-            }
-
-            // Informational guide, font & Coloured Tajweed mode strip
-            if (!isFullScreen) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.sdp, vertical = 4.sdp)
-                            .clip(RoundedCornerShape(10.sdp))
-                            .background(DesertOchreLight.copy(alpha = 0.5f))
-                            .padding(horizontal = 10.sdp, vertical = 6.sdp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickableDebounced { showWaqfGuideDialog = true },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(16.sdp)
-                                    .clip(CircleShape)
-                                    .background(DesertOchre),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "۝",
-                                    color = PureAlabaster,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(6.sdp))
-                            val shortFontTitle = when (selectedQuranFont) {
-                                "hafs", "uthmani" -> "Hafs"
-                                "muhammadi" -> "Muhammadi"
-                                "al_majeed" -> "Al-Majeed"
-                                "al_mushaf" -> "Al-Mushaf"
-                                "al_qalam" -> "Al-Qalam"
-                                "nabi" -> "Nabi"
-                                "pdms_saleem", "pdms", "indopak" -> "PDMS Saleem"
-                                else -> "Muhammadi"
-                            }
-                            Text(
-                                text = "$shortFontTitle • Tajweed & Waqf Guide",
-                                color = TextPrimary,
-                                fontSize = 11.5.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(8.sdp))
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.sdp)
-                        ) {
-                            Surface(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.sdp))
-                                    .clickableDebounced { onToggleColoredQuran() },
-                                color = if (isColoredQuran) MedinaSageLight else PureAlabaster,
-                                border = BorderStroke(1.dp, if (isColoredQuran) MedinaSage else DividerColor)
-                            ) {
-                                Text(
-                                    text = if (isColoredQuran) "🎨 Coloured" else "📖 Plain",
-                                    modifier = Modifier.padding(horizontal = 8.sdp, vertical = 4.sdp),
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isColoredQuran) MedinaSage else TextPrimary,
-                                    maxLines = 1
-                                )
-                            }
-
-                            IconButton(
-                                onClick = { showWaqfGuideDialog = true },
-                                modifier = Modifier.size(26.sdp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.MenuBook,
-                                    contentDescription = "Tajweed Waqf Signs Guide",
-                                    tint = DesertOchre,
-                                    modifier = Modifier.size(16.sdp)
-                                )
-                            }
-                        }
-                    }
-
-                    // Compact Tajweed Color Legend Bar when Coloured Quran is active
-                    if (isColoredQuran) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 14.sdp, vertical = 2.sdp)
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.sdp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            TajweedLegendChip("Waqf / Pause", QuranTextFormatter.TAJWEED_WAQF_COLOR)
-                            TajweedLegendChip("Madd", QuranTextFormatter.TAJWEED_MADD_COLOR)
-                            TajweedLegendChip("Ghunnah", QuranTextFormatter.TAJWEED_GHUNNAH_COLOR)
-                            TajweedLegendChip("Ikhfa/Idgham", QuranTextFormatter.TAJWEED_IKHFA_COLOR)
-                            TajweedLegendChip("Qalqalah", QuranTextFormatter.TAJWEED_QALQALAH_COLOR)
-                            TajweedLegendChip("Iqlab", QuranTextFormatter.TAJWEED_IQLAB_COLOR)
                         }
                     }
                 }
@@ -405,35 +321,24 @@ fun SurahDetailReader(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(
-                        start = 16.sdp,
-                        end = 16.sdp,
-                        top = 8.sdp,
-                        bottom = 84.sdp
+                        start = AppDimensions.paddingMediumSmall,
+                        end = AppDimensions.paddingMediumSmall,
+                        top = AppDimensions.paddingSmall,
+                        bottom = AppDimensions.readerBottomPadding
                     ),
-                    verticalArrangement = Arrangement.spacedBy(14.sdp)
+                    verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingMediumSmall)
                 ) {
                     itemsIndexed(
                         items = verses,
                         key = { index, ayah -> "${ayah.surahNumber}_${ayah.numberInSurah}_$index" }
                     ) { index, ayah ->
-                        val prevAyah = if (index > 0) verses[index - 1] else null
                         val effectiveSurahNum = if (ayah.surahNumber > 0) ayah.surahNumber else surah.number
 
-                        val isNewJuzStart = index == 0 || (prevAyah != null && ayah.juz != prevAyah.juz)
-                        val isNewSurahTransition = index == 0 ||
-                                (prevAyah != null && effectiveSurahNum != (if (prevAyah.surahNumber > 0) prevAyah.surahNumber else surah.number))
+                        // Show header ONLY when a new Surah starts (never show Juz start header)
+                        val isNewSurahStart = ayah.numberInSurah == 1 || (!isJuzMode && index == 0)
 
-                        Column(verticalArrangement = Arrangement.spacedBy(10.sdp)) {
-                            // 1. Juz / Para Start Indicator Banner
-                            if (isNewJuzStart) {
-                                JuzStartHeaderBanner(
-                                    juzNumber = ayah.juz,
-                                    isMidSurahTransition = index > 0
-                                )
-                            }
-
-                            // 2. Surah Start Header Banner + Bismillah
-                            if (isNewSurahTransition) {
+                        Column(verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingRegular)) {
+                            if (isNewSurahStart) {
                                 val surahMeta = remember(effectiveSurahNum, allSurahs) {
                                     allSurahs.find { it.number == effectiveSurahNum }
                                         ?: QuranStaticData.ALL_SURAHS.find { it.number == effectiveSurahNum }
@@ -441,12 +346,14 @@ fun SurahDetailReader(
                                 }
                                 SurahStartHeaderBanner(
                                     surah = surahMeta,
-                                    startingAyahNumber = ayah.numberInSurah,
-                                    selectedQuranFont = selectedQuranFont
+                                    selectedQuranFont = selectedQuranFont,
+                                    showTranslation = showTranslation || showUrduTranslation,
+                                    onToggleTranslation = onToggleTranslation,
+                                    onOpenTafseer = { onOpenTafseer(ayah) }
                                 )
                             }
 
-                            // 3. Verse Card
+                            // Verse Card
                             val isPlaying = currentlyPlayingAyah != null &&
                                     (currentlyPlayingAyah == ayah.globalAyahNumber ||
                                             (!isJuzMode && currentlyPlayingAyah == ayah.numberInSurah))
@@ -482,10 +389,10 @@ fun SurahDetailReader(
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = if (isFullScreen) 16.sdp else 20.sdp)
-                .padding(horizontal = 12.sdp),
+                .padding(bottom = if (isFullScreen) AppDimensions.paddingMedium else AppDimensions.paddingMediumLarge)
+                .padding(horizontal = AppDimensions.paddingMediumSmall),
             horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.spacedBy(8.sdp)
+            verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingSmall)
         ) {
             if (isFullScreen) {
                 Surface(
@@ -493,56 +400,61 @@ fun SurahDetailReader(
                     shape = CircleShape,
                     color = MedinaSage,
                     contentColor = PureAlabaster,
-                    shadowElevation = 6.dp,
-                    border = BorderStroke(1.dp, DesertOchre.copy(alpha = 0.5f)),
-                    modifier = Modifier.size(40.sdp)
+                    shadowElevation = AppDimensions.elevationHigh,
+                    border = BorderStroke(AppDimensions.borderWidthThin, DesertOchre.copy(alpha = 0.5f)),
+                    modifier = Modifier.size(AppDimensions.avatarSize)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Default.FullscreenExit,
                             contentDescription = "Exit Full Screen",
                             tint = PureAlabaster,
-                            modifier = Modifier.size(22.sdp)
+                            modifier = Modifier.size(AppDimensions.iconMedium)
                         )
                     }
                 }
             }
 
             Surface(
-                shape = RoundedCornerShape(24.sdp),
+                shape = RoundedCornerShape(AppDimensions.cornerDialog),
                 color = PureAlabaster.copy(alpha = 0.96f),
-                shadowElevation = 8.dp,
-                border = BorderStroke(1.dp, MedinaSage.copy(alpha = 0.25f))
+                shadowElevation = AppDimensions.elevationHigh,
+                border = BorderStroke(AppDimensions.borderWidthThin, MedinaSage.copy(alpha = 0.25f))
             ) {
                 Row(
                     modifier = Modifier
-                        .padding(horizontal = 10.sdp, vertical = 6.sdp)
+                        .padding(
+                            horizontal = AppDimensions.paddingRegular,
+                            vertical = AppDimensions.paddingExtraSmall
+                        )
                         .horizontalScroll(rememberScrollState()),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(5.sdp)
+                    horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingTiny)
                 ) {
                     Surface(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(16.sdp))
+                            .clip(RoundedCornerShape(AppDimensions.cornerLarge))
                             .clickableDebounced {
                                 isContinuousScrolling = !isContinuousScrolling
                             },
                         color = if (isContinuousScrolling) MedinaSage else MedinaSageLight
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 10.sdp, vertical = 6.sdp),
+                            modifier = Modifier.padding(
+                                horizontal = AppDimensions.paddingRegular,
+                                vertical = AppDimensions.paddingExtraSmall
+                            ),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.sdp)
+                            horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingTiny)
                         ) {
                             Icon(
                                 imageVector = if (isContinuousScrolling) Icons.Default.Pause else Icons.Default.PlayArrow,
                                 contentDescription = if (isContinuousScrolling) "Pause Auto-Scroll" else "Start Auto-Scroll",
                                 tint = if (isContinuousScrolling) PureAlabaster else MedinaSage,
-                                modifier = Modifier.size(16.sdp)
+                                modifier = Modifier.size(AppDimensions.iconSmall)
                             )
-                            Text(
-                                text = if (isContinuousScrolling) "Scrolling" else "Auto-Scroll",
-                                fontSize = 11.5.sp,
+                            AppText.Caption(
+                                text = if (isContinuousScrolling) stringResource(R.string.quran_scrolling) else stringResource(R.string.quran_auto_scroll),
                                 fontWeight = FontWeight.Bold,
                                 color = if (isContinuousScrolling) PureAlabaster else MedinaSage
                             )
@@ -555,19 +467,24 @@ fun SurahDetailReader(
                         val speedLabel = if (speed % 1f == 0f) "${speed.toInt()}x" else "${speed}x"
                         Surface(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(12.sdp))
+                                .clip(RoundedCornerShape(AppDimensions.cornerMedium))
                                 .clickableDebounced {
                                     scrollSpeed = speed
                                 },
                             color = if (isSelected) MedinaSage else WarmParchment,
-                            border = BorderStroke(1.dp, if (isSelected) MedinaSage else DividerColor)
+                            border = BorderStroke(
+                                AppDimensions.borderWidthThin,
+                                if (isSelected) MedinaSage else DividerColor
+                            )
                         ) {
-                            Text(
+                            AppText.Caption(
                                 text = speedLabel,
-                                fontSize = 10.5.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 color = if (isSelected) PureAlabaster else TextSecondary,
-                                modifier = Modifier.padding(horizontal = 6.sdp, vertical = 4.sdp)
+                                modifier = Modifier.padding(
+                                    horizontal = AppDimensions.paddingExtraSmall,
+                                    vertical = AppDimensions.paddingTiny
+                                )
                             )
                         }
                     }
@@ -577,193 +494,234 @@ fun SurahDetailReader(
     }
 }
 
-@Composable
-private fun JuzStartHeaderBanner(
-    juzNumber: Int,
-    isMidSurahTransition: Boolean
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.sdp),
-        color = DesertOchreLight.copy(alpha = 0.75f),
-        border = BorderStroke(1.2.dp, DesertOchre)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.sdp, vertical = 8.sdp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(26.sdp)
-                        .clip(CircleShape)
-                        .background(DesertOchre),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "$juzNumber",
-                        color = PureAlabaster,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Spacer(modifier = Modifier.width(10.sdp))
-                Column {
-                    Text(
-                        text = if (isMidSurahTransition)
-                            "NEW JUZ / PARA STARTED • JUZ $juzNumber"
-                        else
-                            "JUZ / PARA $juzNumber",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
-                    )
-                    Text(
-                        text = "الجزء $juzNumber من القرآن الكريم",
-                        fontSize = 11.sp,
-                        color = TextSecondary
-                    )
-                }
-            }
-            Text(
-                text = "۞",
-                fontSize = 20.sp,
-                color = DesertOchre,
-                fontWeight = FontWeight.Bold
-            )
-        }
+/**
+ * Computes the detail header (title, subtitle) dynamically from the Quran structure:
+ * - In Surah mode: shows "Surah <name> (<arabicName>)".
+ * - In Juz mode: checks whether the first Ayah of the Juz begins at Ayah 1 of a Surah
+ *   (new Surah -> shows the Surah name) or Ayah > 1 (continues a Surah from the previous Juz
+ *   -> shows the Juz name).
+ */
+private fun resolveReaderHeaderText(
+    isJuzMode: Boolean,
+    surah: Surah,
+    verses: List<Ayah>,
+    selectedJuz: JuzInfo?,
+    allSurahs: List<Surah>
+): Pair<String, String> {
+    val verseCount = verses.size.takeIf { it > 0 } ?: selectedJuz?.totalVerses ?: surah.totalVerses
+    if (!isJuzMode) {
+        return "Surah ${surah.name} (${surah.arabicName})" to "${surah.englishMeaning} • $verseCount Verses"
+    }
+
+    val firstAyah = verses.firstOrNull()
+    val startsNewSurah = firstAyah?.let { it.numberInSurah == 1 }
+        ?: selectedJuz?.startsNewSurah
+        ?: false
+    val firstSurahNum = firstAyah?.surahNumber?.takeIf { it > 0 }
+        ?: selectedJuz?.startingSurahNumber
+        ?: surah.number
+    val startingSurah = allSurahs.find { it.number == firstSurahNum }
+        ?: QuranStaticData.ALL_SURAHS.find { it.number == firstSurahNum }
+
+    val juzLabel = selectedJuz?.let { "Juz ${it.number} (${it.englishName})" } ?: surah.name
+
+    return if (startsNewSurah) {
+        val displaySurah = startingSurah ?: surah
+        "Surah ${displaySurah.name} (${displaySurah.arabicName})" to "$juzLabel • $verseCount Verses"
+    } else {
+        val continuingName = startingSurah?.name ?: selectedJuz?.startingSurahName ?: surah.name
+        juzLabel to "Continues Surah $continuingName • $verseCount Verses"
     }
 }
 
 @Composable
 private fun SurahStartHeaderBanner(
     surah: Surah,
-    startingAyahNumber: Int,
-    selectedQuranFont: String
+    selectedQuranFont: String,
+    showTranslation: Boolean = true,
+    onToggleTranslation: () -> Unit = {},
+    onOpenTafseer: () -> Unit = {}
 ) {
-    val isSurahBeginning = startingAyahNumber == 1
-
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.sdp),
+        shape = RoundedCornerShape(AppDimensions.cornerLarge),
         color = MedinaSage,
-        border = BorderStroke(1.5.dp, DesertOchre.copy(alpha = 0.65f)),
-        tonalElevation = 4.sdp
+        border = BorderStroke(AppDimensions.borderWidthThin, DesertOchre.copy(alpha = 0.55f)),
+        tonalElevation = AppDimensions.elevationMedium
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(HeroBannerGradient)
-                .padding(horizontal = 16.sdp, vertical = 14.sdp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Top Badge: New Surah Started vs Continuing Surah
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(20.sdp))
-                    .background(DesertOchre.copy(alpha = 0.28f))
-                    .border(0.8.dp, DesertOchre, RoundedCornerShape(20.sdp))
-                    .padding(horizontal = 12.sdp, vertical = 3.sdp)
-            ) {
-                Text(
-                    text = if (isSurahBeginning)
-                        "✦ SURAH ${surah.number} • ${surah.revelationType.uppercase()} • ${surah.totalVerses} VERSES ✦"
-                    else
-                        "✦ SURAH ${surah.number} • CONTINUING FROM AYAH $startingAyahNumber ✦",
-                    fontSize = 10.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = PureAlabaster
+                .padding(
+                    horizontal = AppDimensions.paddingMediumSmall,
+                    vertical = AppDimensions.paddingMediumSmall
                 )
-            }
-
-            Spacer(modifier = Modifier.height(8.sdp))
-
+        ) {
+            // Top Section: Left (Calligraphic Surah Name + Translation & Tafseer buttons) | Right (Kaaba Circle + Ayaat count)
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    AppText.HeadingMedium(
-                        text = "Surah ${surah.name}",
-                        color = PureAlabaster,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1
-                    )
-                    if (surah.englishMeaning.isNotBlank()) {
-                        AppText.BodySmall(
-                            text = surah.englishMeaning,
-                            color = MedinaSageLight,
-                            maxLines = 1
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = AppDimensions.paddingRegular),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    if (surah.arabicName.isNotBlank()) {
+                        AppText.ArabicText(
+                            text = surah.arabicName,
+                            color = PureAlabaster,
+                            fontSize = AppDimensions.textArabicBanner,
+                            textAlign = TextAlign.Center,
+                            fontKeyOverride = selectedQuranFont,
+                            maxLines = 1,
+                            applySafePadding = false
                         )
+                    } else {
+                        AppText.HeadingMedium(
+                            text = "Surah ${surah.name}",
+                            color = PureAlabaster,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(AppDimensions.paddingSmall))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingSmall),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            onClick = onToggleTranslation,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(AppDimensions.cornerSmall),
+                            color = if (showTranslation) PureAlabaster.copy(alpha = 0.16f) else PureAlabaster.copy(alpha = 0.06f),
+                            border = BorderStroke(AppDimensions.borderWidthThin, PureAlabaster.copy(alpha = 0.45f))
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(
+                                    vertical = AppDimensions.paddingExtraSmall,
+                                    horizontal = AppDimensions.paddingExtraSmall
+                                ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                AppText.BodySmall(
+                                    text = stringResource(R.string.quran_translation_btn),
+                                    fontWeight = FontWeight.Medium,
+                                    color = PureAlabaster,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+
+                        Surface(
+                            onClick = onOpenTafseer,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(AppDimensions.cornerSmall),
+                            color = PureAlabaster.copy(alpha = 0.10f),
+                            border = BorderStroke(AppDimensions.borderWidthThin, PureAlabaster.copy(alpha = 0.45f))
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(
+                                    vertical = AppDimensions.paddingExtraSmall,
+                                    horizontal = AppDimensions.paddingExtraSmall
+                                ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                AppText.BodySmall(
+                                    text = stringResource(R.string.quran_tafseer_btn),
+                                    fontWeight = FontWeight.Medium,
+                                    color = PureAlabaster,
+                                    maxLines = 1
+                                )
+                            }
+                        }
                     }
                 }
 
-                if (surah.arabicName.isNotBlank()) {
-                    AppText.ArabicText(
-                        text = surah.arabicName,
-                        color = DesertOchreLight,
-                        fontSize = 24.sp,
-                        fontKeyOverride = selectedQuranFont,
-                        maxLines = 1
+                VerticalDivider(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(vertical = AppDimensions.paddingMicro),
+                    thickness = AppDimensions.dividerHairline,
+                    color = PureAlabaster.copy(alpha = 0.22f)
+                )
+
+                Column(
+                    modifier = Modifier.padding(
+                        start = AppDimensions.paddingMediumSmall,
+                        end = AppDimensions.paddingTiny
+                    ),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(AppDimensions.badgeCircleLarge)
+                            .clip(CircleShape)
+                            .background(PureAlabaster.copy(alpha = 0.14f))
+                            .border(AppDimensions.borderWidthThick, PureAlabaster, CircleShape)
+                            .padding(AppDimensions.paddingExtraSmall),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_kaaba),
+                            contentDescription = "Surah Revelation",
+                            modifier = Modifier.size(AppDimensions.iconExtraLarge)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(AppDimensions.paddingExtraSmall))
+
+                    AppText.BodySmall(
+                        text = "Ayaat : ${surah.totalVerses}",
+                        fontWeight = FontWeight.Bold,
+                        color = PureAlabaster
                     )
                 }
             }
 
-            // Bismillah Banner at the start of every Surah except Surah At-Tawbah (9) and Surah Al-Fatiha (1)
-            if (isSurahBeginning && surah.number != 9 && surah.number != 1) {
-                Spacer(modifier = Modifier.height(10.sdp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.sdp))
-                        .background(PureAlabaster.copy(alpha = 0.12f))
-                        .border(0.8.dp, DesertOchre.copy(alpha = 0.45f), RoundedCornerShape(12.sdp))
-                        .padding(vertical = 6.sdp, horizontal = 8.sdp),
-                    contentAlignment = Alignment.Center
+            // Bottom Bismillah Section (shown for all Surahs except Surah At-Tawbah #9)
+            if (surah.number != 9) {
+                Spacer(modifier = Modifier.height(AppDimensions.paddingRegular))
+                HorizontalDivider(
+                    thickness = AppDimensions.dividerHairline,
+                    color = PureAlabaster.copy(alpha = 0.22f)
+                )
+                Spacer(modifier = Modifier.height(AppDimensions.paddingSmall))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    AppText.UrduText(
+                        text = "شروع کرتا ہوں اللہ تعالیٰ کے نام سے جو بڑا مہربان نہایت رحم والا ہے ۔",
+                        fontSize = AppDimensions.textBodyMedium,
+                        color = PureAlabaster.copy(alpha = 0.95f),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .weight(1.05f)
+                            .padding(end = AppDimensions.paddingSmall)
+                    )
+
                     AppText.ArabicText(
                         text = "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ",
                         color = PureAlabaster,
-                        fontSize = 22.sp,
-                        textAlign = TextAlign.Center,
+                        fontSize = AppDimensions.textBismillahBanner,
+                        textAlign = TextAlign.End,
                         fontKeyOverride = selectedQuranFont,
-                        modifier = Modifier.fillMaxWidth()
+                        applySafePadding = false,
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun TajweedLegendChip(
-    label: String,
-    color: Color
-) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.sdp))
-            .background(PureAlabaster)
-            .border(0.8.dp, color.copy(alpha = 0.45f), RoundedCornerShape(8.sdp))
-            .padding(horizontal = 8.sdp, vertical = 3.sdp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.sdp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(8.sdp)
-                .clip(CircleShape)
-                .background(color)
-        )
-        Text(
-            text = label,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = TextPrimary
-        )
     }
 }

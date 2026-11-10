@@ -26,10 +26,11 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ne.muslimprayers.qiblafinder.core.common.PrayerNotificationMode
+import com.ne.muslimprayers.qiblafinder.core.theme.AppDimensions
 import com.ne.muslimprayers.qiblafinder.core.theme.WarmParchment
-import com.ne.muslimprayers.qiblafinder.core.theme.sdp
 import com.ne.muslimprayers.qiblafinder.ui.alarm.components.AdhanAudioInfoCard
 import com.ne.muslimprayers.qiblafinder.ui.alarm.components.PrayerAlarmRowCard
+import com.ne.muslimprayers.qiblafinder.ui.alarm.components.SunriseSunsetHeaderCard
 import com.ne.muslimprayers.qiblafinder.ui.components.IslamicTopAppBar
 import com.ne.muslimprayers.qiblafinder.ui.components.LoadingState
 
@@ -77,14 +78,14 @@ fun PrayerAlarmScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
-                        .padding(horizontal = 16.sdp),
-                    horizontalArrangement = Arrangement.spacedBy(16.sdp)
+                        .padding(horizontal = AppDimensions.paddingMedium),
+                    horizontalArrangement = Arrangement.spacedBy(AppDimensions.paddingMedium)
                 ) {
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .padding(top = 4.sdp),
-                        verticalArrangement = Arrangement.spacedBy(12.sdp)
+                            .padding(top = AppDimensions.paddingTiny),
+                        verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingRegular)
                     ) {
                         AdhanAudioInfoCard(
                             masterEnabled = state.masterNotificationsEnabled,
@@ -95,12 +96,19 @@ fun PrayerAlarmScreen(
                             previewPrayerType = state.previewPrayerType,
                             onTogglePreview = viewModel::togglePreviewAdhan
                         )
+                        SunriseSunsetHeaderCard(
+                            sunriseTime = state.sunriseTime,
+                            sunsetTime = state.sunsetTime
+                        )
                     }
 
                     LazyColumn(
                         modifier = Modifier.weight(1.2f),
-                        contentPadding = PaddingValues(top = 4.sdp, bottom = 24.sdp),
-                        verticalArrangement = Arrangement.spacedBy(10.sdp)
+                        contentPadding = PaddingValues(
+                            top = AppDimensions.paddingTiny,
+                            bottom = AppDimensions.paddingLarge
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingRegular)
                     ) {
                         items(state.alarms, key = { it.id }) { alarmItem ->
                             val mode = state.notificationModes[alarmItem.prayerType]
@@ -122,9 +130,12 @@ fun PrayerAlarmScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
-                        .padding(horizontal = 16.sdp),
-                    contentPadding = PaddingValues(top = 4.sdp, bottom = 24.sdp),
-                    verticalArrangement = Arrangement.spacedBy(12.sdp)
+                        .padding(horizontal = AppDimensions.paddingMedium),
+                    contentPadding = PaddingValues(
+                        top = AppDimensions.paddingTiny,
+                        bottom = AppDimensions.paddingLarge
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(AppDimensions.paddingRegular)
                 ) {
                     item {
                         AdhanAudioInfoCard(
@@ -135,6 +146,13 @@ fun PrayerAlarmScreen(
                             isPlayingPreview = state.isPlayingPreview,
                             previewPrayerType = state.previewPrayerType,
                             onTogglePreview = viewModel::togglePreviewAdhan
+                        )
+                    }
+
+                    item {
+                        SunriseSunsetHeaderCard(
+                            sunriseTime = state.sunriseTime,
+                            sunsetTime = state.sunsetTime
                         )
                     }
 
