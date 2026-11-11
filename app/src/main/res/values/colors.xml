@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#1F6E58</color>
-    <color name="colorPrimaryDark">#175342</color>
-    <color name="colorAccent">#C88A32</color>
     <color name="warm_parchment">#FBF9F5</color>
-    <color name="pure_alabaster">#FFFFFF</color>
     <color name="medina_sage">#1F6E58</color>
     <color name="desert_ochre">#C88A32</color>
     <color name="white">#FFFFFF</color>
-    <color name="black">#000000</color>
 </resources>

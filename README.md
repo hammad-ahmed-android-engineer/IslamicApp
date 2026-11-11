@@ -1,141 +1,160 @@
 # 🕌 Islamic App - Comprehensive Muslim Companion & Qibla Finder
 
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.0.21-purple.svg?style=flat&logo=kotlin)](https://kotlinlang.org)
-[![Android Gradle Plugin](https://img.shields.io/badge/AGP-8.13.2-blue.svg?style=flat&logo=android)](https://developer.android.com/studio/releases/gradle-plugin)
-[![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Latest-green.svg?style=flat&logo=jetpackcompose)](https://developer.android.com/jetpack/compose)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.2.10-purple.svg?style=flat&logo=kotlin)](https://kotlinlang.org)
+[![Android Gradle Plugin](https://img.shields.io/badge/AGP-9.5.1-blue.svg?style=flat&logo=android)](https://developer.android.com/studio/releases/gradle-plugin)
+[![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-BOM%202024.10.00-green.svg?style=flat&logo=jetpackcompose)](https://developer.android.com/jetpack/compose)
 [![Material 3](https://img.shields.io/badge/Material%203-Expressive-orange.svg?style=flat&logo=materialdesign)](https://m3.material.io/)
 [![Clean Architecture](https://img.shields.io/badge/Architecture-Clean%20%2B%20MVVM%20%2B%20UDF-brightgreen.svg?style=flat)](#-architecture--design-patterns)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-**Islamic App** is a beautifully designed, all-in-one native Android companion for Muslims. Built with **Kotlin**, **Jetpack Compose (Material 3)**, and strict **Clean Architecture**, this app provides a seamless and spiritually enriching experience. It features a full Holy Quran reader, authentic Hadith collections, precise Prayer Timings, Qibla direction, and daily Ibadat tools (Digital Tasbih and Duas)—all wrapped in a serene, custom-themed UI.
+**Islamic App** (Noor App) is an all-in-one native Android companion for Muslims built with **Kotlin**, **Jetpack Compose (Material 3)**, and modern **Clean Architecture**. The app provides a spiritually enriching experience featuring a full Holy Quran reader with audio recitations, authentic Hadith collections, precise Prayer Timings with custom Adhan alarms, real-time Qibla compass, Digital Tasbih, Hijri Calendar, Salah Progress Tracker, 99 Names of Allah, and a Zakat Calculator.
 
 ---
 
 ## 🌟 Overview & Philosophy
 
-The Islamic App operates on three core principles:
-1. **Spiritual Serenity through Design**: The UI leverages a custom color palette (Medina Sage, Warm Parchment, and Desert Ochre) alongside traditional Arabic typography (Amiri Quran font) to minimize distractions and enhance reading focus.
-2. **Comprehensive Daily Utility**: From calculating accurate prayer times and pointing to the Qibla, to providing digital Dhikr tools and authentic Hadiths, every feature is tailored for daily Muslim life.
-3. **Engineering Excellence**: Built with strict Clean Architecture, reactive state flows, responsive layouts, Coroutines, and offline-first Room database support.
+1. **Spiritual Serenity through Design**: Clean, modern Material 3 design system featuring custom themes, Arabic script rendering using the traditional *Amiri Quran* typeface, Tajweed guides, and rosetted Ayah counters.
+2. **Comprehensive Daily Utility**: All essentials for a Muslim's daily worship—from accurate location-based prayer timing calculations and exact alarm notifications to a daily/weekly Salah tracker and digital Dhikr tools.
+3. **Modern Android Architecture**: Strict separation of concerns following Clean Architecture guidelines (Data, Domain, Presentation), Unidirectional Data Flow (UDF), Kotlin Coroutines, Room Database, Retrofit APIs, and Dagger Hilt dependency injection.
 
 ---
 
 ## ✨ Core Features & Capabilities
 
 ### 📖 1. Holy Quran (القرآن الكريم)
-- **Surah & Juz Navigation**: Browse the Quran seamlessly by Surahs (Chapters) or Juz (Parts).
-- **Rich Text & Typography**: Renders sacred Arabic text with proper Tajweed Waqf marks and Ayah End signs using the custom `Amiri Quran` font.
-- **Translation & Transliteration**: Toggleable English translations and transliterations for deeper understanding.
-- **Audio Playback**: Listen to high-quality audio recitations with play/pause controls for individual Ayahs.
-- **Ayah Actions**: Bookmark, copy, or share specific Ayahs directly from the reader.
+- **Surah & Juz Browsing**: Flexible navigation by Surah (114 chapters) or Juz (30 parts).
+- **Sacred Typography & Script**: Custom rendering with Tajweed Waqf marks using the `Amiri Quran` font.
+- **Tafseer & Ayah Details**: Instant access to Ayah Tafseer, translation, and transliteration settings.
+- **Audio Recitations**: Reciter selection and offline audio download management with playback preview capabilities.
+- **Bookmarks & Customization**: Bookmark favorite Ayahs, toggle text displays, adjust font sizes, and view Tajweed guides.
 
 ### 📚 2. Authentic Hadith Collections (الحديث النبوي)
-- **Multiple Collections**: Browse through various authentic books and collections.
-- **Chapter-Based Navigation**: Quickly navigate between sections and chapters of Hadith books.
-- **Search Capability**: Instantly search for specific Hadiths by text, chapter, or narrator.
+- **Book Collections**: Explore major authentic Hadith collections.
+- **Structured Navigation**: Chapter-by-chapter browsing with quick search capabilities across Hadiths and narrators.
 
-### 📿 3. Ibadat & Remembrance (الأذكار والعبادات)
-- **Digital Tasbih**: A highly interactive digital counter featuring haptic feedback, adaptive landscape/portrait bead layouts, reset controls, and target setting.
-- **Dhikr Presets**: Quick-select presets for common remembrances (e.g., *SubhanAllah*, *Alhamdulillah*, *Allahu Akbar*).
-- **Fortress of the Muslim (Duas)**: A categorized collection of daily supplications, complete with search, copy, and share functionalities.
+### 📿 3. Ibadat, Duas & Digital Tasbih (الأذكار والتسبيح)
+- **Digital Tasbih Counter**: Interactive counter with haptic feedback, custom bead graphics, sound effects, reset options, and target setting.
+- **Dhikr Presets**: Quick select common remembrances (*SubhanAllah*, *Alhamdulillah*, *Allahu Akbar*, etc.).
+- **Fortress of the Muslim (Duas)**: Categorized daily supplications with search, copy, share, and custom color palettes.
 
-### 🕋 4. Qibla Finder & Prayer Timings
-- **Accurate Qibla Compass**: Leverages device sensors and location to point accurately to the Kaaba.
-- **Prayer Schedule**: Calculates precise daily prayer timings based on the user's location.
+### 🕋 4. Qibla Finder & Sensor Compass
+- **Real-Time Compass**: Real-time sensor integration (`CompassSensorManager`) with visual calibration guidance and directional accuracy for finding the Qibla.
+- **Location Awareness**: GPS location detection via Google Play Services Location for accurate bearings.
 
-### 📐 5. Adaptive & Responsive Layouts
-- Fluid responsive UI supporting both Portrait and Dual-Column/Horizontal Landscape layouts (e.g., adaptive Tasbih UI placing the bead counter next to the controls in landscape).
+### ⏰ 5. Prayer Timings & Exact Adhan Alarms
+- **Location-Based Schedule**: Automatic prayer calculation supporting multiple calculation methods and juristic settings (e.g., Asr juristic method).
+- **Alarm Management**: Custom notification alarms using exact alarm scheduling (`SCHEDULE_EXACT_ALARM`, `USE_EXACT_ALARM`) and `PrayerAlarmReceiver` for timely Adhan alerts.
+
+### 📅 6. Hijri Calendar & Salah Tracker
+- **Islamic Calendar**: Interactive Hijri and Gregorian calendar viewer with day-by-day prayer timing lookup and Hijri date offset adjustments.
+- **Salah Tracker**: Track daily and weekly prayer completion with interactive checklists and visual progress cards.
+
+### 🧮 7. Additional Islamic Utilities
+- **99 Names of Allah (Asma ul-Husna)**: Detailed view of the divine names and meanings.
+- **Zakat Calculator**: Instant wealth calculation tool based on current Nisab rates.
 
 ---
 
 ## 📐 Architecture & Design Patterns
 
-The Islamic App follows modern Android architectural standards with strict **Clean Architecture**, **MVVM**, and **Unidirectional Data Flow (UDF)**:
-
-### Complete Project Directory & Package Structure
+The project enforces **Clean Architecture**, **MVVM**, and **Unidirectional Data Flow (UDF)**:
 
 ```
-com.ne.muslimprayers.qiblafinder/
-├── core/
-│   └── theme/                     # Custom Colors (MedinaSage, WarmParchment, DesertOchre), Typography (QuranFontFamily), Theme, and Dimensions (sdp/ssp)
-│
-├── data/
-│   ├── local/                     # Room Database, DAOs, Entities (e.g., IslamicAppDatabase.kt)
-│   ├── remote/                    # Retrofit APIs and DTOs (e.g., QuranApiService.kt, QuranDtos.kt)
-│   └── repository/                # Concrete repository implementations (e.g., QuranRepositoryImpl)
-│
-├── di/                            # Dagger Hilt Modules
-│   ├── AppModule.kt               # Application scope bindings & coroutine dispatchers
-│   └── DatabaseModule.kt          # Room database, DAOs, and network clients
-│
-├── domain/
-│   ├── model/                     # Domain models (Ayah, DuaItem, TasbihState, etc.)
-│   ├── repository/                # Abstract repository interfaces (e.g., QuranRepository)
-│   └── usecase/                   # Single-responsibility business use cases
-│       └── quran/                 # GetQuranSurahsUseCase, etc.
-│
-├── ui/                            # Presentation Layer (Jetpack Compose + MVVM + UDF)
-│   ├── components/                # Reusable UI Primitives (IslamicTopAppBar, IslamicCard, AppText, LoadingState, ErrorState)
-│   ├── hadith/                    # Hadith Screen, ViewModel, and Components (HadithCardItem, HadithDetailDialog)
-│   ├── ibadat/                    # Ibadat Screen, ViewModel, Tasbih Tab, Duas Tab, and Bead Counter
-│   ├── prayers/                   # Prayer Timings Screen, ViewModel, and Components
-│   ├── quran/                     # Quran Screen, ViewModel, SurahDetailReader, AyahCardItem, and Settings Sheet
-│   └── qibla/                     # Qibla Compass Screen & ViewModel
-│
-└── MainActivity.kt                # Single Activity entry point
+com.example.noorapp/
+├── App.kt                          # Application entry point (@HiltAndroidApp)
+├── core/                           # Core utilities, theme, and design system
+│   ├── common/                     # CompassSensorManager, LocationHelper, PrayerSettingsManager, etc.
+│   ├── designsystem/               # Reusable Compose design primitives (AppText, AppButton, AppCard, etc.)
+│   ├── theme/                      # Colors, Typography (Amiri Quran), Dimensions (Sdp/Ssp), Theme
+│   └── utils/                      # Helper utilities, DateTimeUtils, PrayerTimeCalculator, HijriCalendarCalculator
+├── data/                           # Data Layer (Local & Remote Data Sources)
+│   ├── local/                      # Room Database (IslamicAppDatabase), DAOs, Entities, Database Helpers
+│   ├── remote/                     # Retrofit Services (Quran, Hadith, Dua, Prayer APIs) & DTOs
+│   └── repository/                 # Repository implementation classes (QuranRepositoryImpl, etc.)
+├── di/                             # Dagger Hilt Modules
+│   ├── DatabaseModule.kt           # Room Database & DAO bindings
+│   ├── LocationModule.kt           # Fused Location Provider bindings
+│   ├── NetworkModule.kt            # Retrofit & OkHttp client bindings
+│   ├── RepositoryModule.kt         # Repository interface-to-implementation bindings
+│   └── UseCaseModule.kt            # Domain Use Case bindings
+├── domain/                         # Domain Layer (Business Logic)
+│   ├── model/                      # Domain Data Models (Ayah, PrayerSchedule, SalahRecord, etc.)
+│   ├── repository/                 # Repository Interfaces
+│   └── usecase/                    # Single-responsibility Use Cases (quran, hadith, dua, qibla, salah, etc.)
+├── service/                        # Background Services & Receivers
+│   ├── AlarmScheduler.kt           # Exact Alarm scheduling logic
+│   └── PrayerAlarmReceiver.kt      # BroadcastReceiver for trigger-time Adhan notifications
+└── ui/                             # Presentation Layer (Jetpack Compose + MVVM)
+    ├── MainActivity.kt             # Main Entry Activity
+    ├── alarm/                      # Prayer Alarm settings screen & ViewModel
+    ├── calendar/                   # Hijri Calendar screen & ViewModel
+    ├── compass/                    # Qibla Compass screen & ViewModel
+    ├── hadith/                     # Hadith collection screens & ViewModel
+    ├── home/                       # Home Dashboard screen & ViewModel
+    ├── ibadat/                     # Duas & Supplications screens & ViewModel
+    ├── more/                       # App settings, Names of Allah, Zakat calculator & ViewModel
+    ├── navigation/                 # AppNavigation graph & Screen routes
+    ├── prayers/                    # Prayer Timings screen & ViewModel
+    ├── quran/                      # Full Quran reader, Surah detail, Tafseer & ViewModel
+    ├── salahtracker/               # Daily/Weekly Salah tracker & ViewModel
+    ├── splash/                     # Animated Splash screen
+    └── tasbih/                     # Digital Tasbih counter & ViewModel
 ```
-
-### Key Engineering Practices:
-- **Unidirectional Data Flow (UDF)**: ViewModels expose immutable `StateFlow<UiState>` collected securely with `collectAsStateWithLifecycle()`.
-- **Dependency Injection**: Fully integrated with **Dagger Hilt** for seamless view model injection and testable repository bindings.
-- **Custom Design System**: Utilizes custom `AppText`, `IslamicCard`, and scalable dimensions (`sdp` and `ssp` libraries) for perfect rendering across all screen sizes.
-- **Coroutines & Flow**: Heavy lifting, API fetching, and database operations are strictly handled off the main thread using Kotlin Coroutines.
 
 ---
 
-## 🛠 Tech Stack & Dependencies
+## 🛠 Tech Stack & Version Catalog
 
-All dependencies are centrally managed via Gradle Version Catalog (`libs.versions.toml`):
+Dependencies are centrally managed in `gradle/libs.versions.toml`:
 
-| Category | Library / Dependency | Version | Purpose |
+| Component / Layer | Technology | Version | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Language** | [Kotlin](https://kotlinlang.org/) | `2.0.21` | Modern, expressive, type-safe programming |
-| **Build System** | [Android Gradle Plugin (AGP)](https://developer.android.com/build) | `8.13.2` | Project build configuration |
-| **Annotation Processing** | [KSP](https://kotlinlang.org/docs/ksp-overview.html) | `2.0.21-1.0.28` | High-performance code generation for Room & Hilt |
-| **UI Framework** | [Jetpack Compose](https://developer.android.com/develop/ui/compose/bom) | `1.9.3` | Declarative UI toolkit |
-| **Design System** | [Material 3](https://developer.android.com/develop/ui/compose/components) | `1.12.0` | Expressive Material Design components |
-| **Dependency Injection** | [Dagger Hilt](https://dagger.dev/hilt/) | `2.52` | Dependency injection framework |
+| **Language** | [Kotlin](https://kotlinlang.org/) | `2.2.10` | Primary development language |
+| **Build Tool** | [Android Gradle Plugin (AGP)](https://developer.android.com/studio/build) | `9.5.1` | Build system |
+| **Code Generation** | [KSP](https://kotlinlang.org/docs/ksp-overview.html) | `2.2.10-2.0.2` | Kotlin Symbol Processing for Room & Hilt |
+| **UI Framework** | [Jetpack Compose BOM](https://developer.android.com/develop/ui/compose/bom) | `2024.10.00` | Declarative UI toolkit |
+| **Design System** | [Material 3](https://m3.material.io/) / [Android Material](https://github.com/material-components/material-components-android) | `1.14.0` | Material design components |
+| **Dependency Injection** | [Dagger Hilt](https://dagger.dev/hilt/) | `2.60.1` | Compile-time dependency injection |
 | **Navigation** | [Navigation Compose](https://developer.android.com/guide/navigation) | `2.8.4` | Single-activity Compose navigation |
-| **Local Database** | [Room Database](https://developer.android.com/training/data-storage/room) | `2.6.1` | SQLite object mapping with Flow support |
-| **Network/API** | [Retrofit](https://square.github.io/retrofit/) & [OkHttp](https://square.github.io/okhttp/) | `2.11.0` / `4.12.0` | REST API consumption & logging |
-| **Location** | [Play Services Location](https://developers.google.com/android/reference/com/google/android/gms/location/package-summary) | `21.3.0` | High-accuracy location for Qibla/Prayers |
-| **Responsive Units** | [SDP & SSP Android](https://github.com/intuit/sdp) | `1.1.1` | Scalable size and font dimensions |
-| **Image Loading** | [Coil Compose](https://coil-kt.github.io/coil/) | `2.7.0` | Asynchronous image loading |
-| **Permissions** | [Accompanist Permissions](https://google.github.io/accompanist/) | `0.36.0` | Compose-friendly permission requests |
+| **Hilt Navigation** | [Hilt Navigation Compose](https://developer.android.com/jetpack/androidx/releases/hilt) | `1.2.0` | ViewModel injection in Compose navigation |
+| **Local Database** | [Room Database](https://developer.android.com/training/data-storage/room) | `2.8.5` | SQLite abstraction layer with Coroutines Flow |
+| **Networking** | [Retrofit](https://square.github.io/retrofit/) & [OkHttp](https://square.github.io/okhttp/) | `3.0.0` / `4.12.0` | REST API requests & logging interceptor |
+| **Location** | [Play Services Location](https://developers.google.com/android/reference/com/google/android/gms/location/package-summary) | `21.4.0` | Device location for Qibla & Prayer calculations |
+| **Coroutines** | [Kotlinx Coroutines](https://github.com/Kotlin/kotlinx.coroutines) | `1.11.0` | Asynchronous programming & Play Services await |
+| **Lifecycle** | [AndroidX Lifecycle](https://developer.android.com/jetpack/androidx/releases/lifecycle) | `2.9.0` | ViewModels & Compose lifecycle state integration |
+| **Core KTX** | [AndroidX Core KTX](https://developer.android.com/jetpack/androidx/releases/core) | `1.18.0` | Kotlin extensions for Android framework |
+| **Activity** | [Activity Compose](https://developer.android.com/jetpack/androidx/releases/activity) | `1.13.0` | Compose integration for Activity |
+
+---
+
+## ⚙️ App Configuration Specs
+
+- **Application ID**: `com.example.noorapp`
+- **Compile SDK**: `36`
+- **Target SDK**: `36`
+- **Min SDK**: `24` (Android 7.0 Nougat)
+- **Java Compatibility**: JDK 21 (`JavaVersion.VERSION_21`)
+- **Version Code**: `3`
+- **Version Name**: `"1.0.0"`
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- **Android Studio**: Android Studio Jellyfish (2023.3.1+) or newer.
-- **Java Development Kit (JDK)**: JDK 17.
-- **Android SDK Requirements**: Requires Android 8.0 Oreo (API 26) or higher.
+- **Android Studio**: Android Studio Ladybug (2024.2.1) or newer recommended.
+- **Java Development Kit**: JDK 21 configured in Android Studio.
+- **Android SDK**: API Level 36 SDK installed.
 
-### 1. Clone the Repository
+### 1. Clone the Project
 ```bash
 git clone https://github.com/hammad-ahmed-android-engineer/IslamicApp.git
 cd IslamicApp
 ```
 
-### 2. Open Project in Android Studio
-1. Launch Android Studio.
-2. Select **File > Open...** and navigate to the cloned `IslamicApp` directory.
-3. Allow Gradle to synchronize dependencies.
+### 2. Build & Run from Command Line
 
-### 3. Build & Run via Command Line
-
-#### Compile Kotlin Sources:
+#### Compile Project:
 ```bash
 # Windows
 .\gradlew.bat compileDebugKotlin
@@ -144,7 +163,7 @@ cd IslamicApp
 ./gradlew compileDebugKotlin
 ```
 
-#### Assemble Debug APK:
+#### Build Debug APK:
 ```bash
 # Windows
 .\gradlew.bat assembleDebug
@@ -152,12 +171,9 @@ cd IslamicApp
 # macOS / Linux
 ./gradlew assembleDebug
 ```
-The output APK is generated at:
-```
-app/build/outputs/apk/debug/app-debug.apk
-```
+The compiled APK will be located at `app/build/outputs/apk/debug/app-debug.apk`.
 
-#### Install Directly onto a Connected Device / Emulator:
+#### Install on Connected Device / Emulator:
 ```bash
 # Windows
 .\gradlew.bat installDebug
@@ -168,28 +184,17 @@ app/build/outputs/apk/debug/app-debug.apk
 
 ---
 
-## 🔒 Permissions & Security
+## 🔒 Permissions Breakdown
 
-The Islamic App requests the following permissions strictly to provide core functionalities:
-
-- `android.permission.ACCESS_FINE_LOCATION` & `ACCESS_COARSE_LOCATION`: Required to accurately calculate local prayer timings and the precise direction of the Qibla.
-- `android.permission.INTERNET`: Required to download Quranic audio recitations and fetch the latest database updates.
-- `android.permission.VIBRATE`: Provides sensory haptic feedback while using the Digital Tasbih.
-- `android.permission.POST_NOTIFICATIONS`: Prompts for notification permission on Android 13+ (API 33+) to deliver Adhan (Call to Prayer) alerts.
-
----
-
-## 🤝 Contributing
-
-Contributions, feedback, and issue reports are highly encouraged!
-1. Fork the repository.
-2. Create a feature branch (`git checkout -b feature/amazing-feature`).
-3. Commit your changes (`git commit -m "Add amazing feature"`).
-4. Push to the branch (`git push origin feature/amazing-feature`).
-5. Open a Pull Request.
+- `ACCESS_FINE_LOCATION` & `ACCESS_COARSE_LOCATION`: Computes exact Qibla direction and local prayer schedules based on geographical coordinates.
+- `INTERNET`: Downloads Quran audio recitations and accesses online APIs for Hadiths, Duas, and Prayer schedules.
+- `VIBRATE`: Provides physical haptic feedback when counting on the Digital Tasbih.
+- `POST_NOTIFICATIONS`: Delivers Adhan notifications for prayer times (Android 13+).
+- `SCHEDULE_EXACT_ALARM` & `USE_EXACT_ALARM`: Ensures Adhan alarms trigger precisely at calculated prayer times.
+- `WAKE_LOCK`: Ensures prayer alarm notifications alert the user reliably even when the device is idle.
 
 ---
 
 ## 📄 License
 
-This project is open-source and distributed under the terms of the [Apache License 2.0](LICENSE).
+Distributed under the terms of the **Apache License 2.0**. See `LICENSE` for details.
